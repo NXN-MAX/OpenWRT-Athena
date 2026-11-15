@@ -1,0 +1,11 @@
+{
+  "luci-theme-athena": {
+    "description": "Configure Athena, manage assets and check GitHub releases",
+    "read": { "ubus": { "luci.athena": ["get", "check_update", "update_status"] }, "uci": ["athena"] },
+    "write": {
+      "ubus": { "luci.athena": ["install", "select", "remove", "start_update"] },
+      "uci": ["athena"],
+      "file": { "/tmp/athena-upload-*.tmp": ["write"] }
+    }
+  }
+}
