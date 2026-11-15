@@ -1,0 +1,21 @@
+{
+  "name": "luci-theme-athena",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:styles": "node scripts/check-styles.mjs",
+    "build": "npm run lint:styles && node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "pack": "node scripts/pack.mjs"
+  },
+  "dependencies": {
+    "@heroui/styles": "3.2.7",
+    "tailwindcss": "4.3.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.5",
+    "lightningcss": "1.33.0",
+    "linkedom": "0.18.12"
+  }
+}
