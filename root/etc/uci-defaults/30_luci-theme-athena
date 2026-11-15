@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+uci -q get luci.themes >/dev/null || uci set luci.themes=internal
+uci set luci.themes.Athena='/luci-static/athena'
+uci set luci.main.mediaurlbase='/luci-static/athena'
+uci commit luci
+exit 0
