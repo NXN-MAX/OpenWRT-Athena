@@ -1,0 +1,158 @@
+// Athena assets and GitHub releases, native rpcd ucode.
+'use strict';
+import { readfile, writefile, lstat, mkdir, chmod, rename, unlink, lsdir, popen, rmdir } from 'fs';
+import { statvfs } from 'luci.core';
+const root = '/www/luci-static/athena/branding';
+const iconPattern = /^icon-[a-f0-9]{64}\.png$/;
+const bgPattern = /^bg-[a-f0-9]{64}\.(png|jpg|gif|webp|mp4|webm)$/;
+const updateRoot = '/var/run/athena-update';
+function regular(path) { return lstat(path)?.type == 'file'; }
+function state() {
+  let value = {};
+  try { const s = lstat(root + '/current.json'); if (s?.type == 'file' && s.size < 2048) value = json(readfile(root + '/current.json')); } catch(e) {}
+  const safe = {};
+  for (let kind in ['logo', 'favicon', 'background']) if (type(value?.[kind]) == 'string' && match(value[kind], kind == 'background' ? bgPattern : iconPattern) && regular(root + '/' + value[kind])) safe[kind] = value[kind];
+  return safe;
+}
+function commit(value) {
+  if (writefile(root + '/current.json.tmp', sprintf('%J', value)) == null) die('Cannot write asset settings');
+  chmod(root + '/current.json.tmp', 0644);
+  if (!rename(root + '/current.json.tmp', root + '/current.json')) die('Cannot save asset settings');
+}
+function ensure() {
+  if (lstat(root)?.type == 'link') die('Invalid asset directory');
+  if (!lstat(root) && !mkdir(root, 0755)) die('Cannot create asset directory');
+}
+function currentVersion() { return trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.1'); }
+function get() {
+  const files = [];
+  for (let name in lsdir(root) ?? []) if (match(name, bgPattern) && regular(root + '/' + name)) push(files, { name, size: lstat(root + '/' + name).size });
+  const disk = statvfs('/www');
+  return { result: 0, ...state(), files, version: currentVersion(), available: (disk?.bavail ?? 0) * (disk?.frsize ?? 0) };
+}
+function newer(a, b) {
+  const aa = split(a, '.'), bb = split(b, '.');
+  for (let i = 0; i < 3; i++) if (+aa[i] != +bb[i]) return +aa[i] > +bb[i];
+  return false;
+}
+function parseRelease(release) {
+  const current = currentVersion(), tag = release?.tag_name;
+  const matchTag = type(tag) == 'string' ? match(tag, /^v?([0-9]+\.[0-9]+\.[0-9]+)$/) : null;
+  if (!matchTag || release.draft || release.prerelease) return { result: 1, error: 'Invalid stable release' };
+  const latest = matchTag[1], name = 'luci-theme-athena-' + latest + '.tar.gz';
+  const url = 'https://github.com/NXN-MAX/OpenWRT-Athena/releases/download/' + tag + '/' + name;
+  let asset = null;
+  for (let candidate in release.assets ?? []) if (candidate.name == name) asset = candidate;
+  const verified = asset?.browser_download_url == url && asset?.state == 'uploaded' && asset?.size > 0 && asset.size <= 8*1024*1024 && match(asset?.digest ?? '', /^sha256:[a-f0-9]{64}$/);
+  return { result: 0, current, latest, tag, status: !newer(latest, current) ? 'current' : verified ? 'available' : 'missing_asset',
+    available: !!verified && newer(latest, current), url, digest: verified ? substr(asset.digest, 7) : null,
+    size: verified ? asset.size : 0, release_url: 'https://github.com/NXN-MAX/OpenWRT-Athena/releases/tag/' + tag };
+}
+function checkUpdate() {
+  if (!regular('/usr/bin/curl')) return { result: 1, error: 'curl is required for GitHub updates' };
+  const command = "/usr/bin/curl --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 5 --max-time 15 --max-filesize 1048576 -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' -A 'Athena-Theme' -w '\\n%{http_code}' 'https://api.github.com/repos/NXN-MAX/OpenWRT-Athena/releases/latest' 2>/dev/null";
+  const process = popen(command, 'r'), output = process?.read('all') ?? '', code = process?.close();
+  const status = substr(output, -3);
+  if (status == '404') return { result: 0, current: currentVersion(), available: false, status: 'unreleased' };
+  if (code != 0 || status != '200') return { result: 1, error: status == '403' || status == '429' ? 'GitHub API rate limit; try again later' : 'Cannot reach GitHub releases (HTTP ' + status + ')' };
+  try { return parseRelease(json(substr(output, 0, length(output)-4))); } catch(e) { return { result: 1, error: 'Invalid GitHub response' }; }
+}
+function updateStatus(args) {
+  const job = args.job || trim(readfile(updateRoot + '/current') ?? '');
+  if (!match(job, /^[a-f0-9-]{36}$/)) return { result: 0, phase: 'idle' };
+  const path = updateRoot + '/' + job + '.json';
+  if (!regular(path)) return { result: 0, job, phase: 'starting' };
+  try { return { result: 0, job, ...json(readfile(path)) }; } catch(e) { return { result: 1, error: 'Cannot read update status' }; }
+}
+function startUpdate(args) {
+  if (!match(args.tag ?? '', /^v?[0-9]+\.[0-9]+\.[0-9]+$/)) return { result: 1, error: 'Invalid release tag' };
+  if (!regular('/usr/libexec/athena-update')) return { result: 1, error: 'Update helper is not installed' };
+  const release = checkUpdate();
+  if (release.result != 0) return release;
+  if (!release.available || release.tag != args.tag) return { result: 1, error: 'No matching newer release. Check for updates again.' };
+  const disk = statvfs('/www');
+  if ((disk?.bavail ?? 0) * (disk?.frsize ?? 0) < release.size*4 + 2*1024*1024) return { result: 1, error: 'Not enough free space for update and rollback backup' };
+  const job = trim(readfile('/proc/sys/kernel/random/uuid') ?? '');
+  if (!lstat(updateRoot) && !mkdir(updateRoot, 0700)) return { result: 1, error: 'Cannot create update state directory' };
+  if (lstat(updateRoot)?.type != 'directory') return { result: 1, error: 'Invalid update state directory' };
+  if (!match(job, /^[a-f0-9-]{36}$/) || !mkdir(updateRoot + '/lock', 0700)) return { result: 1, error: 'A theme update is already running' };
+  if (writefile(updateRoot + '/lock/job', job) == null || writefile(updateRoot + '/current', job) == null) {
+    unlink(updateRoot + '/lock/job'); rmdir(updateRoot + '/lock'); return { result: 1, error: 'Cannot write update state' };
+  }
+  const process = popen("/usr/libexec/athena-update '" + job + "' '" + release.tag + "' '" + release.url + "' '" + release.digest + "' >" + updateRoot + "/log 2>&1 </dev/null &", 'r');
+  if (!process || process.close() != 0) { unlink(updateRoot + '/lock/job'); rmdir(updateRoot + '/lock'); return { result: 1, error: 'Cannot start update' }; }
+  return { result: 0, job, phase: 'starting' };
+}
+function u32(data, offset) { return ord(data, offset) * 16777216 + ord(data, offset+1) * 65536 + ord(data, offset+2) * 256 + ord(data, offset+3); }
+function png(data, square) {
+  if (length(data) < 67 || hexenc(substr(data, 0, 16)) != '89504e470d0a1a0a0000000d49484452') return false;
+  const width = u32(data, 16), height = u32(data, 20);
+  if (width < 16 || width > 1024 || height < 16 || height > 1024 || square && width != height) return false;
+  let offset = 8, idat = false;
+  while (offset + 12 <= length(data)) {
+    const count = u32(data, offset), kind = substr(data, offset+4, 4);
+    if (offset + 12 + count > length(data)) return false;
+    if (kind == 'IDAT') idat = true;
+    if (kind == 'IEND') return count == 0 && offset + 12 == length(data) && idat;
+    offset += count + 12;
+  }
+  return false;
+}
+function mediaType(data) {
+  const head = hexenc(substr(data, 0, 12));
+  if (substr(head, 0, 16) == '89504e470d0a1a0a') return 'png';
+  if (substr(head, 0, 6) == 'ffd8ff') return 'jpg';
+  if (substr(data, 0, 6) == 'GIF87a' || substr(data, 0, 6) == 'GIF89a') return 'gif';
+  if (substr(data, 0, 4) == 'RIFF' && substr(data, 8, 4) == 'WEBP') return 'webp';
+  if (substr(data, 4, 4) == 'ftyp') return 'mp4';
+  if (substr(head, 0, 8) == '1a45dfa3') return 'webm';
+  return null;
+}
+function install(args) {
+  if (!(args.kind in ['logo', 'favicon', 'background']) || !match(args.token ?? '', /^[a-f0-9]{32}$/)) return { result: 1, error: 'Invalid upload request' };
+  const source = '/tmp/athena-upload-' + args.token + '.tmp';
+  const info = lstat(source), max = args.kind == 'background' ? 20*1024*1024 : 1024*1024;
+  if (info?.type != 'file' || info.size < 16 || info.size > max) { if (info?.type == 'file') unlink(source); return { result: 1, error: 'Invalid upload size or file' }; }
+  const data = readfile(source), ext = mediaType(data);
+  if (!ext || args.kind != 'background' && (ext != 'png' || !png(data, args.kind == 'favicon'))) { unlink(source); return { result: 1, error: 'Use a valid PNG icon (16–1024 pixels), or a supported image/video background' }; }
+  const process = popen('/usr/bin/sha256sum ' + source, 'r');
+  const digest = substr(process?.read('all') ?? '', 0, 64); const code = process?.close();
+  if (code != 0 || !match(digest, /^[a-f0-9]{64}$/)) { unlink(source); return { result: 1, error: 'Cannot verify upload' }; }
+  ensure();
+  const name = (args.kind == 'background' ? 'bg-' : 'icon-') + digest + '.' + ext;
+  const destination = root + '/' + name;
+  if (lstat(destination)?.type == 'link') { unlink(source); return { result: 1, error: 'Invalid asset destination' }; }
+  if (!regular(destination)) {
+    if (writefile(destination + '.tmp', data) != length(data)) { unlink(destination + '.tmp'); unlink(source); return { result: 1, error: 'Not enough free space' }; }
+    chmod(destination + '.tmp', 0644);
+    if (!rename(destination + '.tmp', destination)) { unlink(source); die('Cannot install upload'); }
+  }
+  unlink(source);
+  const value = state(); value[args.kind] = name; commit(value);
+  for (let file in lsdir(root) ?? []) if (match(file, iconPattern) && file != value.logo && file != value.favicon) unlink(root + '/' + file);
+  return get();
+}
+function remove(args) {
+  if (!(args.kind in ['logo', 'favicon', 'background'])) return { result: 1, error: 'Invalid asset kind' };
+  ensure(); const value = state();
+  const name = args.kind == 'background' ? args.name : value[args.kind];
+  if (args.kind == 'background' && !match(name ?? '', bgPattern)) return { result: 1, error: 'Invalid file name' };
+  if (value[args.kind] == name) delete value[args.kind];
+  commit(value);
+  if (name && name != value.logo && name != value.favicon && regular(root + '/' + name)) unlink(root + '/' + name);
+  return get();
+}
+const methods = {
+  get: { call: () => get() },
+  check_update: { call: () => checkUpdate() },
+  update_status: { args: { job: '' }, call: request => updateStatus(request.args) },
+  start_update: { args: { tag: '' }, call: request => startUpdate(request.args) },
+  install: { args: { kind: '', token: '' }, call: request => install(request.args) },
+  select: { args: { name: '' }, call: function(request) {
+    const name = request.args.name;
+    if (!match(name ?? '', bgPattern) || !regular(root + '/' + name)) return { result: 1, error: 'Invalid background' };
+    ensure(); const value = state(); value.background = name; commit(value); return get();
+  } },
+  remove: { args: { kind: '', name: '' }, call: request => remove(request.args) }
+};
+return { 'luci.athena': methods };
