@@ -1,0 +1,103 @@
+#!/bin/sh
+# Installs only Athena-owned paths from a verified, official release archive.
+set -eu
+umask 077
+target_root=''
+state_root='/var/run/athena-update'
+job=${1:-}; tag=${2:-}; url=${3:-}; digest=${4:-}
+printf '%s' "$job" | grep -Eq '^[a-f0-9-]{36}$' || exit 2
+printf '%s' "$tag" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+$' || exit 2
+printf '%s' "$digest" | grep -Eq '^[a-f0-9]{64}$' || exit 2
+release=${tag#v}
+[ "$url" = "https://github.com/NXN-MAX/OpenWRT-Athena/releases/download/$tag/luci-theme-athena-$release.tar.gz" ] || exit 2
+[ "$(cat "$state_root/lock/job")" = "$job" ] || exit 2
+status="$state_root/$job.json"
+work=''
+changed=0; completed=0; backup=''
+write_status() {
+  printf '{"phase":"%s","version":"%s","backup":"%s"}\n' "$1" "$release" "$backup" > "$status.next"
+  mv "$status.next" "$status"
+}
+finish() {
+  code=$?
+  trap - EXIT HUP INT TERM
+  if [ "$completed" != 1 ]; then
+    if [ "$changed" = 1 ]; then
+      restored=1
+      while IFS= read -r path; do
+        target="$target_root/$path"
+        if [ -f "$work/old/$path" ]; then
+          cp -p "$work/old/$path" "$target.next" && mv "$target.next" "$target" || restored=0
+        else
+          rm -f "$target" "$target.next" || restored=0
+        fi
+      done < "$work/targets"
+      if [ "$restored" = 1 ]; then write_status rolled_back; else write_status rollback_failed; fi
+    else
+      write_status failed
+    fi
+  fi
+  [ -z "$work" ] || rm -rf "$work"
+  rm -f "$state_root/lock/job"
+  rmdir "$state_root/lock"
+  exit "$code"
+}
+trap finish EXIT
+trap 'exit 1' HUP INT TERM
+work=$(mktemp -d /tmp/athena-update.XXXXXX)
+write_status downloading
+/usr/bin/curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 120 --max-filesize 8388608 -A 'Athena-Theme' -o "$work/release.tar.gz" "$url"
+printf '%s  %s\n' "$digest" "$work/release.tar.gz" | sha256sum -c -
+write_status verifying
+tar -tzf "$work/release.tar.gz" > "$work/entries"
+awk 'BEGIN{ok=1} !/^[A-Za-z0-9_.\/-]+$/ || $0 !~ /^luci-theme-athena(\/|$)/ || $0 ~ /(^|\/)\.\.?($|\/)/ {ok=0} END{exit !ok}' "$work/entries"
+tar -tvzf "$work/release.tar.gz" > "$work/types"
+awk 'substr($0,1,1)!="d" && substr($0,1,1)!="-" {bad=1} END{exit bad}' "$work/types"
+mkdir "$work/stage"
+tar -xzf "$work/release.tar.gz" -C "$work/stage"
+theme="$work/stage/luci-theme-athena"
+[ "$(du -sk "$theme" | awk '{print $1}')" -le 16384 ]
+[ "$(cat "$theme/htdocs/luci-static/athena/release-version")" = "$release" ]
+for path in htdocs/luci-static/athena/athena.css htdocs/luci-static/athena/version htdocs/luci-static/athena/theme.js htdocs/luci-static/resources/menu-athena.js htdocs/luci-static/resources/athena/ui.js htdocs/luci-static/resources/view/athena-config.js ucode/template/themes/athena/header.ut ucode/template/themes/athena/footer.ut ucode/template/themes/athena/sysauth.ut root/usr/share/rpcd/ucode/luci.athena root/usr/libexec/athena-update root/usr/share/rpcd/acl.d/luci-theme-athena.json root/usr/share/luci/menu.d/luci-theme-athena.json; do [ -s "$theme/$path" ]; done
+for file in "$theme"/ucode/template/themes/athena/*.ut; do ucode -T -c -o /dev/null "$file"; done
+ucode -c -o /dev/null "$theme/root/usr/share/rpcd/ucode/luci.athena"
+sh -n "$theme/root/usr/libexec/athena-update"
+find "$theme/htdocs" "$theme/ucode" "$theme/root/usr" -type f > "$work/files"
+: > "$work/targets"
+: > "$work/plan"
+mkdir "$work/old"
+while IFS= read -r file; do
+  source_path=${file#"$theme"/}
+  case "$source_path" in
+    htdocs/luci-static/athena/branding/*) continue ;;
+    htdocs/luci-static/athena/*) path="www/${source_path#htdocs/}" ;;
+    htdocs/luci-static/resources/athena/ui.js|htdocs/luci-static/resources/menu-athena.js|htdocs/luci-static/resources/view/athena-config.js) path="www/${source_path#htdocs/}" ;;
+    ucode/template/themes/athena/*.ut) path="usr/share/ucode/luci/${source_path#ucode/}" ;;
+    root/usr/share/rpcd/ucode/luci.athena|root/usr/libexec/athena-update|root/usr/share/rpcd/acl.d/luci-theme-athena.json|root/usr/share/luci/menu.d/luci-theme-athena.json) path=${source_path#root/} ;;
+    *) continue ;;
+  esac
+  printf '%s\n' "$path" >> "$work/targets"
+  printf '%s %s\n' "$file" "$path" >> "$work/plan"
+  [ ! -L "$target_root/$path" ]
+  if [ -f "$target_root/$path" ]; then mkdir -p "$work/old/$(dirname "$path")"; cp -p "$target_root/$path" "$work/old/$path"; fi
+done < "$work/files"
+if [ -f "$target_root/etc/config/athena" ]; then mkdir -p "$work/old/etc/config"; cp -p "$target_root/etc/config/athena" "$work/old/etc/config/athena"; fi
+backup="/etc/athena/backups/athena-$(date -u +%Y%m%d-%H%M%S)-$job.tar.gz"
+mkdir -p "$target_root/etc/athena/backups"
+(cd "$work/old" && find . -type f) > "$work/backup-files"
+tar -czf "$target_root$backup" -C "$work/old" -T "$work/backup-files"
+write_status installing
+changed=1
+while IFS=' ' read -r file path; do
+  [ "$path" != www/luci-static/athena/version ] || continue
+  (umask 022; mkdir -p "$target_root/$(dirname "$path")")
+  cp "$file" "$target_root/$path.next"
+  chmod 0644 "$target_root/$path.next"
+  [ "$path" != usr/libexec/athena-update ] || chmod 0755 "$target_root/$path.next"
+  mv "$target_root/$path.next" "$target_root/$path"
+done < "$work/plan"
+cp "$theme/htdocs/luci-static/athena/version" "$target_root/www/luci-static/athena/version.next"
+mv "$target_root/www/luci-static/athena/version.next" "$target_root/www/luci-static/athena/version"
+completed=1
+write_status complete
+if [ -z "$target_root" ]; then (sleep 2; /etc/init.d/rpcd reload) >/dev/null 2>&1 & fi
