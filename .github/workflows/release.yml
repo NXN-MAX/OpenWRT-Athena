@@ -1,0 +1,43 @@
+name: Stable release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['package.json', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: athena-stable-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate stable release version
+        run: |
+          node <<'JS'
+          const fs = require('node:fs');
+          const { version } = require('./package.json');
+          const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : `v${version}`;
+          if (!/^\d+\.\d+\.\d+$/.test(version) || tag !== `v${version}`) process.exit(1);
+          fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_TAG=${tag}\n`);
+          JS
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run pack
+      - name: Publish prebuilt native theme
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "$RELEASE_TAG has already been published."
+          else
+            gh release create "$RELEASE_TAG" dist/* --target "$GITHUB_SHA" --title "Athena $RELEASE_TAG" --generate-notes
+          fi
