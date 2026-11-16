@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {parseHTML} from 'linkedom';
 const source=readFileSync(new URL('../htdocs/luci-static/resources/athena/ui.js',import.meta.url),'utf8');
-function fixture(markup,page='admin-system-package-manager') {
- const {document,window}=parseHTML(`<html lang="zh-cn"><body data-page="${page}"><main id="maincontent">${markup}</main></body></html>`);
- document.documentElement.lang='zh-cn';
+function fixture(markup,page='admin-system-package-manager',lang='zh-cn') {
+ const {document,window}=parseHTML(`<html lang="${lang}"><body data-page="${page}"><main id="maincontent">${markup}</main></body></html>`);
+ document.documentElement.lang=lang;
  window.getComputedStyle=node=>({overflowX:node.style.overflowX||node.style.overflow||'visible',overflowY:node.style.overflowY||node.style.overflow||'visible'});
  window.HTMLElement.prototype.getBoundingClientRect=()=>({top:20,left:30,right:930,width:900,height:300});
  const E=(tag,attrs={},children=[])=>{const node=document.createElement(tag);for(const [key,value]of Object.entries(attrs)){if(typeof value==='function')node.addEventListener(key,value);else if(value!=null)node.setAttribute(key,String(value));}for(const item of [children].flat(Infinity))if(item!=null)node.append(typeof item==='object'?item:document.createTextNode(String(item)));return node;};
@@ -170,13 +170,39 @@ test('boolean table filter preserves its native value and reset-all state',async
  const {api,main,window}=fixture('<table class="table"><tr class="cbi-section-table-titles"><th data-widget="CBI.FlagValue">Masquerading</th><th>Actions</th></tr><tr class="cbi-section-table-filter"><th><input class="cbi-section-filter" placeholder="0/1" maxlength="1" value=""></th><th><button>Reset</button></th></tr></table>');
  const input=main.querySelector('input'),reset=main.querySelector('button');
  reset.addEventListener('click',()=>{input.value='';input.dispatchEvent(new window.Event('input',{bubbles:true}));});
- api.controls(main);assert.equal(input.type,'checkbox');assert.equal(input.value,'');
+ api.controls(main);api.controls(main);assert.equal(input.type,'checkbox');assert.equal(input.value,'');
+ const all=main.querySelector('.athena-filter-all');
+ assert.equal(all.textContent,'全部');assert.equal(all.getAttribute('aria-pressed'),'true');
+ assert.equal(all.previousElementSibling.className,'switch__control');assert.equal(main.querySelectorAll('.athena-filter-all').length,1);
  assert.equal(input.closest('.athena-filter-switch').dataset.filterState,'all');
  input.checked=true;input.dispatchEvent(new window.Event('input',{bubbles:true}));assert.equal(input.value,'1');
+ assert.equal(all.getAttribute('aria-pressed'),'false');
  input.checked=false;input.dispatchEvent(new window.Event('input',{bubbles:true}));assert.equal(input.value,'0');
+ all.click();assert.equal(input.value,'');assert.equal(all.getAttribute('aria-pressed'),'true');assert.equal(input.checked,false);
+ input.checked=true;input.dispatchEvent(new window.Event('input',{bubbles:true}));
  reset.click();await new Promise(resolve=>queueMicrotask(resolve));
  assert.equal(input.closest('.athena-filter-switch').dataset.filterState,'all');assert.equal(main.querySelector('input'),input);
+ assert.equal(all.getAttribute('aria-pressed'),'true');
  assert.equal(main.querySelectorAll('.athena-filter-caption').length,0);
+});
+test('All clears only its boolean column and emits the native unfiltered input value',()=>{
+ const {api,main,window}=fixture('<table class="table"><tr class="cbi-section-table-titles"><th>Name</th><th>Enabled</th><th>Masquerading</th></tr><tr class="cbi-section-table-filter"><th><input class="cbi-section-filter" value="lan"></th><th><input class="cbi-section-filter" placeholder="0/1" maxlength="1" value="1"></th><th><input class="cbi-section-filter" placeholder="0/1" maxlength="1" value="0"></th></tr></table><table class="table"><tr class="cbi-section-table-filter"><th><input class="cbi-section-filter" placeholder="0/1" maxlength="1" value="1"></th></tr></table>');
+ const inputs=[...main.querySelectorAll('input')],events=[];
+ main.addEventListener('input',event=>events.push([inputs.indexOf(event.target),event.target.value]));
+ api.controls(main);api.controls(main);
+ const all=inputs[2].closest('.athena-filter-switch').querySelector('.athena-filter-all');
+ all.click();assert.deepEqual(inputs.map(input=>input.value),['lan','1','','1']);assert.deepEqual(events,[[2,'']]);
+ assert.equal(all.getAttribute('aria-pressed'),'true');assert.equal(main.querySelectorAll('.athena-filter-all').length,3);
+ inputs[2].checked=true;inputs[2].dispatchEvent(new window.Event('input',{bubbles:true}));
+ assert.deepEqual(events,[[2,''],[2,'1']]);assert.equal(all.getAttribute('aria-pressed'),'false');
+ assert(!inputs[2].closest('table').hasAttribute('data-athena-filter-resetting'));assert.deepEqual([...main.querySelectorAll('input')],inputs);
+});
+test('All follows disabled state and uses the English filter label',()=>{
+ const {api,main}=fixture('<table class="table"><tr class="cbi-section-table-filter"><th><input class="cbi-section-filter" placeholder="0/1" maxlength="1" value="1" disabled></th></tr></table>','admin-network-firewall','en');
+ const input=main.querySelector('input');api.controls(main);const all=main.querySelector('.athena-filter-all');
+ assert.equal(all.textContent,'All');assert.match(all.getAttribute('aria-label'),/^All/);
+ assert.equal(all.disabled,true);all.click();assert.equal(input.value,'1');
+ input.disabled=false;api.controls(main);assert.equal(all.disabled,false);all.click();assert.equal(input.value,'');
 });
 test('custom dropdown Add uses the original input, native validation and create flow',()=>{
  const {api,main,instances}=fixture('<div class="cbi-dropdown"><ul><li unselectable><input class="create-item-input" value="512"></li></ul></div>');
