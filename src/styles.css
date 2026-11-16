@@ -692,8 +692,9 @@ body > .cbi-tooltip:not(:empty) { display:block; inset:0 auto auto 0; }
  .athena-interface-table .table__content .table__row:not(.table__header) { grid-template-columns:minmax(0,1fr); }
  .athena-interface-table .table__row:not(.table__header) > td:first-child:not(.athena-empty-cell) { inline-size:7rem !important; }
 }
-.athena-filter-switch { gap:7px; }
+.athena-filter-switch { gap:7px; flex-direction:row; flex-wrap:nowrap; min-inline-size:max-content; }
 .athena-filter-switch input { inline-size:40px; }
+.athena-filter-switch .switch__control, .athena-filter-all { flex:none; }
 .athena-filter-switch[data-filter-state="all"] .switch__control { background:var(--athena-border); }
 .athena-log-panel > div:has(> #scrollDownButton), .athena-log-panel > div:has(> #scrollUpButton) { display:flex; justify-content:flex-end; padding:8px 0 !important; }
 .athena-log-panel > textarea { display:block; min-block-size:240px; line-height:1.7; }
