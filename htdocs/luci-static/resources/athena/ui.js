@@ -71,8 +71,31 @@ function syncBooleanFilter(node) {
   if (!wrapper) return;
   attr(wrapper, 'data-filter-state', state);
   const label = state === 'all' ? text('全部', 'All') : state === 'on' ? text('开启', 'On') : text('关闭', 'Off');
-  wrapper.querySelector('.athena-filter-caption')?.remove();
   attr(node, 'aria-label', `${node.dataset.athenaFilterLabel} (${label})`);
+  let all = wrapper.querySelector('.athena-filter-all');
+  if (!all) {
+    all = E('button', {type:'button', class:'athena-filter-all', click:() => {
+      if (!node.disabled) clearBooleanFilters(node.closest('.table'), [node]);
+    }}, text('全部', 'All'));
+    wrapper.append(all);
+  }
+  button(all, state === 'all' ? 'tertiary' : 'ghost', 'sm');
+  attr(all, 'aria-label', `${text('全部', 'All')}：${node.dataset.athenaFilterLabel}`);
+  attr(all, 'aria-pressed', state === 'all');
+  if (all.disabled !== node.disabled) all.disabled = node.disabled;
+}
+function clearBooleanFilters(table, nodes) {
+  const resetting = table.dataset.athenaFilterResetting;
+  table.dataset.athenaFilterResetting = 'true';
+  try {
+    for (const node of nodes) {
+      node.value = ''; syncBooleanFilter(node);
+      node.dispatchEvent(new window.Event('input', {bubbles:true}));
+    }
+  } finally {
+    if (resetting === undefined) delete table.dataset.athenaFilterResetting;
+    else table.dataset.athenaFilterResetting = resetting;
+  }
 }
 function booleanFilters(root) {
   for (const node of root.querySelectorAll('.cbi-section-table-filter input.cbi-section-filter')) {
@@ -97,12 +120,7 @@ function booleanFilters(root) {
         reset.addEventListener('click', () => {
           // LuCI resets the source value and emits input. Restore its third
           // (unfiltered) state after that handler, rather than mapping it to 0.
-          table.dataset.athenaFilterResetting = 'true';
-          for (const filter of table.querySelectorAll('[data-athena-boolean-filter]')) {
-            filter.value = ''; syncBooleanFilter(filter);
-            filter.dispatchEvent(new window.Event('input', {bubbles:true}));
-          }
-          delete table.dataset.athenaFilterResetting;
+          clearBooleanFilters(table, table.querySelectorAll('[data-athena-boolean-filter]'));
         });
       }
     }
