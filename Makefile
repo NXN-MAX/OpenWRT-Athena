@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 LUCI_TITLE:=Athena native HeroUI theme
 LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode +ucode-mod-fs +ucode-mod-uci +curl +ca-bundle
-PKG_VERSION:=0.0.1
+PKG_VERSION:=0.0.2
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 LUCI_MINIFY_UT:=0
