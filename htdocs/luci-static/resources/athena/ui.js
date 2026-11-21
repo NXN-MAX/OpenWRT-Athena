@@ -74,14 +74,14 @@ function syncBooleanFilter(node) {
   attr(node, 'aria-label', `${node.dataset.athenaFilterLabel} (${label})`);
   let all = wrapper.querySelector('.athena-filter-all');
   if (!all) {
-    all = E('button', {type:'button', class:'athena-filter-all', click:() => {
+    all = E('button', {type:'button', class:'link athena-filter-all', click:() => {
       if (!node.disabled) clearBooleanFilters(node.closest('.table'), [node]);
     }}, text('全部', 'All'));
     wrapper.append(all);
   }
-  button(all, state === 'all' ? 'tertiary' : 'ghost', 'sm');
   attr(all, 'aria-label', `${text('全部', 'All')}：${node.dataset.athenaFilterLabel}`);
   attr(all, 'aria-pressed', state === 'all');
+  attr(all, 'aria-disabled', node.disabled);
   if (all.disabled !== node.disabled) all.disabled = node.disabled;
 }
 function clearBooleanFilters(table, nodes) {
