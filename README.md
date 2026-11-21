@@ -1,4 +1,4 @@
-# Athena v0.0.2
+# Athena v0.0.3
 
 Athena 是原生 LuCI 主题。服务端模板和素材管理 RPC 均使用 **ucode**；浏览器端使用 LuCI 自带的 JavaScript、`form`、`ui`、`rpc`、`poll` 和 UCI 接口。主题不依赖 Lua 兼容层，也不包含 React、ReactDOM 或 Argon 的 CSS/脚本。默认登录页直接以原生 HTTP 表单提交，不在未认证状态启动 LuCI RPC；带脚本的认证插件保留原生初始化接口。
 
@@ -27,7 +27,7 @@ npm run pack
 
 构建会校正安装器、设备检查脚本和更新器的可执行权限；安装器也会设置路由器端更新器权限，兼容网页上传或 ZIP 导出丢失文件模式的情况。
 
-GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.2`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
+GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.3`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
 
 OpenWrt 设备上的接口与更新器隔离检查：
 
@@ -40,7 +40,7 @@ ATHENA_SSH=/path/to/device-ssh python3 scripts/test-updater-device.py
 
 实际使用官方 **`@heroui/styles` 3.2.7** 的 Button、ButtonGroup、Card、Typography、Input、Textarea、Select、Tabs、Table、Modal、Switch、ScrollShadow 等基础样式。该包支持不依赖框架的 HTML。LuCI 控件保留原节点和原事件，组件类直接加到原节点；表格、开关只增加必要的容器。勾选框保留原生控件及主题兼容样式。HeroUI React UIKit 不会发送到路由器。
 
-自定义下拉项的“添加”按钮复用 LuCI 校验及 `createItems()`；布尔表格筛选保留原生的 0、1、未筛选状态。开关右侧的「全部」按钮只清除当前列筛选，保留其他列条件；共享适配层统一处理所有原生布尔筛选，不为页面单独声明。弹出菜单及富文本悬浮详情优先使用浏览器 Popover 顶层，避开表格滚动容器的裁剪。右上角使用 LuCI 原生未保存配置计数，计数为 0 自动隐藏。
+自定义下拉项的“添加”按钮复用 LuCI 校验及 `createItems()`；布尔表格筛选保留原生的 0、1、未筛选状态。开关右侧的「全部」使用紧凑文字按钮，不保留胶囊底色和左右内边距；点击只清除当前列筛选，保留其他列条件；共享适配层统一处理所有原生布尔筛选，不为页面单独声明。弹出菜单及富文本悬浮详情优先使用浏览器 Popover 顶层，避开表格滚动容器的裁剪。右上角使用 LuCI 原生未保存配置计数，计数为 0 自动隐藏。
 
 ## 结构
 
