@@ -29,7 +29,7 @@
   const mode_labels = substr(dispatcher.lang, 0, 2) == 'zh' ? { light: '日光模式', dark: '暗黑模式', system: '跟随系统' } : { light: 'Light mode', dark: 'Dark mode', system: 'Follow system' };
   const color = uci.get('athena', 'global', 'primary') ?? '#1672ee';
   const primary = match(color, /^#[a-fA-F0-9]{6}$/) ? color : '#1672ee';
-  const theme_version = trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.2');
+  const theme_version = trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.3');
   http.prepare_content('text/html; charset=UTF-8');
 %}
 <!DOCTYPE html>
