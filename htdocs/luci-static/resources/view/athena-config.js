@@ -61,7 +61,7 @@ return view.extend({
   },busy||this.installing);
   const update=nativeButton(t('在线更新','Update theme'),'primary',()=>this.confirmUpgrade(),this.readonly||this.installing||busy||!release?.available);
   this.upgradeRoot.replaceChildren(widgets.card(E('h3',{},t('主题更新','Theme update')),[
-   E('p',{},t('当前版本：','Current version: ')+'v'+(this.assets.version||'0.0.2')),
+   E('p',{},t('当前版本：','Current version: ')+'v'+(this.assets.version||'0.0.3')),
    E('p',{},release?.latest?t('最新版本：','Latest version: ')+'v'+release.latest:t('从 GitHub 正式发布版本检查更新。','Check stable releases from GitHub.')),
    this.upgradeError?E('p',{role:'alert'},this.upgradeError):E('p',{},this.updateMessage||messages[release?.status]||''),
    E('div',{class:'athena-upload-actions'},[check,update,E('a',{class:'button button--ghost button--sm',href:'https://github.com/NXN-MAX/OpenWRT-Athena/releases',target:'_blank',rel:'noopener noreferrer'},t('发布记录','Releases'))])
