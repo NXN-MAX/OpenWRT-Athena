@@ -4,6 +4,28 @@
 
 Athena est un thème natif pour OpenWrt LuCI inspiré de HeroUI. Il utilise des modèles ucode, rpcd et les interfaces JavaScript, formulaires et UCI de LuCI. Il ne contient ni environnement React ni styles Argon. Node.js n’est pas nécessaire sur le routeur.
 
+## Aperçu en images
+
+Captures en mode sombre dans un environnement de développement local sous OpenWrt 25.12.6. La langue, les versions et la liste des paquets dépendent de votre installation.
+
+### Vue d’ensemble
+
+Connexion Internet, charge système, mémoire et stockage animé comme un liquide, avec les détails de l’appareil repliables.
+
+![Vue d’ensemble](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/overview-dark.jpg)
+
+### Réglages du thème Athena
+
+Gérez l’apparence par défaut, la connexion, les icônes et les fonds, puis recherchez les mises à jour dans les Releases officielles.
+
+![Réglages du thème Athena](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/theme-settings.jpg)
+
+### Gestionnaire de paquets
+
+Une présentation cohérente des filtres, actions d’installation, onglets et tableaux de LuCI, en conservant son fonctionnement natif.
+
+![Gestionnaire de paquets](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/package-manager.jpg)
+
 ## Fonctionnalités
 
 - Barre latérale adaptative, tableaux et contrôles communs, ombres de défilement et boîtes de dialogue.

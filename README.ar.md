@@ -6,6 +6,28 @@
 
 Athena سمة أصلية لواجهة OpenWrt LuCI، مستوحاة من HeroUI. تستخدم قوالب ucode وخدمة rpcd وواجهات JavaScript والنماذج وUCI الأصلية في LuCI. لا تتضمن بيئة تشغيل React أو أنماط Argon، ولا تحتاج إلى Node.js على جهاز التوجيه.
 
+## معاينة الواجهة
+
+لقطات فعلية بالوضع الداكن من بيئة تطوير محلية تعمل بنظام OpenWrt 25.12.6. تختلف اللغة وأرقام الإصدارات وقوائم الحزم حسب بيئة التثبيت.
+
+### نظرة عامة
+
+حالة الاتصال وحمل النظام والذاكرة وبطاقة التخزين بتأثير سائل متحرك، مع إمكانية طي تفاصيل الجهاز.
+
+![نظرة عامة](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/overview-dark.jpg)
+
+### إعدادات سمة Athena
+
+إدارة المظهر الافتراضي وتخطيط الدخول والأيقونات والخلفيات، والتحقق من التحديثات عبر الإصدارات الرسمية.
+
+![إعدادات سمة Athena](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/theme-settings.jpg)
+
+### إدارة الحزم
+
+تنسيق موحّد لمرشحات LuCI وأدوات التثبيت وعلامات التبويب وجداول الحزم، مع الحفاظ على آلية إدارة الحزم الأصلية.
+
+![إدارة الحزم](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/package-manager.jpg)
+
 ## الميزات
 
 - شريط جانبي متجاوب، وجداول وعناصر إدخال مشتركة، وظلال تمرير ونوافذ حوار.

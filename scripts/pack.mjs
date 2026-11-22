@@ -8,7 +8,7 @@ if(readFileSync(join(base,'htdocs/luci-static/athena/release-version'),'utf8').t
 const output=resolve(process.argv[2]||join(base,'dist'));mkdirSync(output,{recursive:true});
 const work=mkdtempSync(join(tmpdir(),'athena-release-')),stage=join(work,'luci-theme-athena');mkdirSync(stage);
 try {
- for(const path of ['htdocs','ucode','root','licenses','LICENSE','NOTICE','README.md','Makefile','doc',...readdirSync(base).filter(name=>/^README\.[a-z]{2}\.md$/.test(name))])cpSync(join(base,path),join(stage,path),{recursive:true,filter:src=>!src.endsWith('/.DS_Store')&&!src.includes('/branding/')});
+ for(const path of ['htdocs','ucode','root','licenses','LICENSE','NOTICE','README.md','Makefile','doc',...readdirSync(base).filter(name=>/^README\.[a-z]{2}\.md$/.test(name))])cpSync(join(base,path),join(stage,path),{recursive:true,filter:src=>!src.endsWith('/.DS_Store')&&!src.includes('/branding/')&&!src.startsWith(join(base,'doc','screenshots'))});
  mkdirSync(join(stage,'scripts'));cpSync(join(base,'scripts/install.sh'),join(stage,'scripts/install.sh'));
  const name=`luci-theme-athena-${version}.tar.gz`,archive=join(output,name);
  const result=spawnSync('tar',['-czf',archive,'-C',work,'luci-theme-athena'],{stdio:'inherit',env:{...process.env,COPYFILE_DISABLE:'1'}});if(result.status)throw new Error('Archive creation failed');

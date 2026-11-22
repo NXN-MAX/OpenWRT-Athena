@@ -2,9 +2,33 @@
 
 # Athena v0.0.4
 
-Athena 是原生 LuCI 主题。服务端模板和素材管理 RPC 均使用 **ucode**；浏览器端使用 LuCI 自带的 JavaScript、`form`、`ui`、`rpc`、`poll` 和 UCI 接口。主题不依赖 Lua 兼容层，也不包含 React、ReactDOM 或 Argon 的 CSS/脚本。默认登录页直接以原生 HTTP 表单提交，不在未认证状态启动 LuCI RPC；带脚本的认证插件保留原生初始化接口。
+Athena 是采用 HeroUI 设计语言的原生 OpenWrt LuCI 主题，提供玻璃质感界面、动态状态卡片，以及统一的表格、表单和弹窗。支持浅色、深色和跟随系统模式，适配电脑、平板与手机。
+
+服务端模板和素材管理 RPC 均使用 **ucode**；浏览器端使用 LuCI 自带的 JavaScript、`form`、`ui`、`rpc`、`poll` 和 UCI 接口。主题不依赖 Lua 兼容层，也不包含 React、ReactDOM 或 Argon 的 CSS/脚本。默认登录页直接以原生 HTTP 表单提交，不在未认证状态启动 LuCI RPC；带脚本的认证插件保留原生初始化接口。
 
 浏览器标题读取 OpenWrt 原生系统主机名，并附加页面名称及 Athena 主题名。主机名通过 LuCI 的“系统 → 系统 → 通用设置 → 主机名”管理；主题外观设置不重复提供系统配置项。侧边导航顶部以两行显示 OpenWRT / Athena，右侧显示系统版本；底部 GitHub 链接显示当前主题版本。
+
+## 界面预览
+
+以下截图来自本地 OpenWrt 25.12.6 开发环境的深色模式；页面语言、版本号和软件包列表以实际环境为准。
+
+### 网络概览
+
+互联网连接、系统负载、内存与液态存储卡片集中展示，设备详情可折叠查看。
+
+![网络概览](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/overview-dark.jpg)
+
+### Athena 主题设置
+
+统一管理默认外观、登录布局、自定义图标与背景，并从正式 Release 检查更新。
+
+![Athena 主题设置](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/theme-settings.jpg)
+
+### 软件管理
+
+为 LuCI 原生软件管理提供统一的筛选、安装入口、标签页和软件包表格，保留原生包管理流程。
+
+![软件管理](https://raw.githubusercontent.com/NXN-MAX/OpenWRT-Athena/main/doc/screenshots/package-manager.jpg)
 
 ## GitHub 版本检查与在线更新
 
