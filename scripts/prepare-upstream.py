@@ -19,9 +19,13 @@ PAIR = re.compile(r'\b(?:t|text)\(\s*(' + LITERAL + r')\s*,\s*(' + LITERAL + r')
 def upstream(destination):
     if destination.exists() and any(destination.iterdir()):
         raise ValueError('Destination must be a new or empty directory')
+    for name in ['htdocs', 'ucode', 'root', 'src', 'licenses']:
+        tree = BASE / name
+        if destination.is_relative_to(tree) or any(path.is_symlink() for path in tree.rglob('*')):
+            raise ValueError('Source trees must be regular files; destination must be outside them')
     destination.mkdir(parents=True, exist_ok=True)
     for name in ['htdocs', 'ucode', 'root', 'licenses']:
-        shutil.copytree(BASE / name, destination / name)
+        shutil.copytree(BASE / name, destination / name, ignore=shutil.ignore_patterns('.DS_Store', 'branding'))
     # luci.mk treats any src/ directory as native compiled installation input.
     shutil.copytree(BASE / 'src', destination / 'style-src')
     for name in ['LICENSE', 'NOTICE', 'package-lock.json']:
@@ -212,7 +216,7 @@ The popover and theme-transition integrations have progressive fallbacks;
 reduced-motion preferences are respected. See NOTICE and licenses/ for
 Bootstrap, HeroUI and Gravity Icons attribution. Apache-2.0 and MIT apply.
 ''')
-    (destination / '.gitignore').write_text('node_modules/\n')
+    (destination / '.gitignore').write_text('node_modules/\n!package-lock.json\n')
     digest = hashlib.sha256()
     for file in sorted((destination / 'htdocs').rglob('*')):
         if file.is_file() and file.name != 'version':
