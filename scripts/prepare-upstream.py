@@ -4,6 +4,7 @@
 Does not commit, sign off, push, install, or modify the independent edition.
 """
 import argparse
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -19,8 +20,10 @@ def upstream(destination):
     if destination.exists() and any(destination.iterdir()):
         raise ValueError('Destination must be a new or empty directory')
     destination.mkdir(parents=True, exist_ok=True)
-    for name in ['htdocs', 'ucode', 'root', 'src', 'licenses']:
+    for name in ['htdocs', 'ucode', 'root', 'licenses']:
         shutil.copytree(BASE / name, destination / name)
+    # luci.mk treats any src/ directory as native compiled installation input.
+    shutil.copytree(BASE / 'src', destination / 'style-src')
     for name in ['LICENSE', 'NOTICE', 'package-lock.json']:
         shutil.copy2(BASE / name, destination / name)
     (destination / 'root/usr/libexec/athena-update').unlink()
@@ -108,14 +111,20 @@ exit 0
 ''' + source[stop:]
     view.write_text(source)
     catalog = {}
+    def gettext_pair(match):
+        chinese, english = (ast.literal_eval(match[index]) for index in [1, 2])
+        prefix = english[:len(english) - len(english.lstrip())]
+        suffix = english[len(english.rstrip()):]
+        if prefix:
+            chinese = chinese.lstrip()
+        if suffix:
+            chinese = chinese.rstrip()
+        catalog[english.strip()] = chinese
+        parts = ([json.dumps(prefix)] if prefix else []) + ['_(' + json.dumps(english.strip()) + ')'] + ([json.dumps(suffix)] if suffix else [])
+        return ' + '.join(parts)
     for file in destination.rglob('*.js'):
         source = file.read_text()
-        for match in PAIR.finditer(source):
-            # Literal pairs in this source use JSON-compatible string contents.
-            english = match[2][1:-1].replace("\\'", "'")
-            chinese = match[1][1:-1].replace("\\'", "'")
-            catalog[english] = chinese
-        source = PAIR.sub(lambda match: '_(' + match[2] + ')', source)
+        source = PAIR.sub(gettext_pair, source)
         source = re.sub(r'^const (?:t|text)\s*=.*\n', '', source, flags=re.M)
         source = re.sub(r'^const zh\s*=.*\n', '', source, flags=re.M)
         source = source.replace("toLocaleTimeString(zh?'zh-CN':'en',", 'toLocaleTimeString(document.documentElement.lang,')
@@ -143,7 +152,7 @@ exit 0
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-const result = spawnSync('node_modules/.bin/tailwindcss', ['-i', 'src/styles.css', '-o', 'htdocs/luci-static/athena/athena.css', '--minify'], { stdio: 'inherit' });
+const result = spawnSync('node_modules/.bin/tailwindcss', ['-i', 'style-src/styles.css', '-o', 'htdocs/luci-static/athena/athena.css', '--minify'], { stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status || 1);
 const walk = path => readdirSync(path, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name)).flatMap(entry => entry.isDirectory() ? walk(join(path, entry.name)) : [join(path, entry.name)]);
 const digest = createHash('sha256');
@@ -164,6 +173,7 @@ writeFileSync('htdocs/luci-static/athena/version', digest.digest('hex').slice(0,
     source = source.replace("'cancelAnimationFrame',source)", "'cancelAnimationFrame','_',source)")
     source = source.replace('id=>frames.delete(id));', 'id=>frames.delete(id),s=>translations[s]||s);')
     test_file.write_text(source)
+    shutil.copy2(BASE / 'tests/upstream/settings.mjs', destination / 'tests/settings.test.mjs')
     shutil.copy2(BASE / 'scripts/test-device.sh', destination / 'scripts/test-device.sh')
     (destination / 'README.md').write_text('''# Athena LuCI theme
 
