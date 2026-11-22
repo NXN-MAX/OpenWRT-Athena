@@ -57,12 +57,21 @@ jobs:
           mkdir -p feed
           tar -xzf source/luci-theme-athena-*.tar.gz -C feed
       - name: Build with official OpenWrt SDK
-        uses: openwrt/gh-action-sdk@f5813d30eeef3534b58ac7e79c5d8842b6035434
         env:
-          ARCH: ${{ matrix.sdk }}
-          FEED_DIR: ${{ github.workspace }}/feed
-          PACKAGES: luci-theme-athena
-          V: s
+          SDK: ${{ matrix.sdk }}
+        run: |
+          curl --fail --location --retry 3 --max-time 60 https://raw.githubusercontent.com/openwrt/gh-action-sdk/f5813d30eeef3534b58ac7e79c5d8842b6035434/entrypoint.sh -o "$RUNNER_TEMP/sdk-entrypoint.sh"
+          sudo chown -R 1000:1000 "$GITHUB_WORKSPACE"
+          docker run --rm --entrypoint /bin/bash \
+            --env FILE_HOST=downloads.openwrt.org \
+            --env PACKAGES=luci-theme-athena --env V=s \
+            -v "$GITHUB_WORKSPACE:/artifacts" \
+            -v "$GITHUB_WORKSPACE/feed:/feed" \
+            -v "$RUNNER_TEMP/sdk-entrypoint.sh:/athena-entrypoint.sh:ro" \
+            "ghcr.io/openwrt/sdk:$SDK" /athena-entrypoint.sh
+      - name: Restore artifact ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
       - name: Collect installable package
         run: |
           mkdir -p packages
