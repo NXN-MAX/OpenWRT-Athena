@@ -53,7 +53,7 @@ Existing `/etc/config/athena` and uploaded assets are preserved. Before uninstal
 
 ## Settings and updates
 
-Open **System → Athena theme** at `/cgi-bin/luci/admin/system/Athena-config`. The configuration file is `/etc/config/athena`. Select the default appearance, login layout and branding here. A manual appearance choice is saved in the browser. The hostname stays in LuCI's native **System → System → General Settings**.
+Open **System → Athena theme** at `/cgi-bin/luci/admin/system/athena`. The configuration file is `/etc/config/athena`. Select the default appearance, login layout and branding here. A manual appearance choice is saved in the browser. The hostname stays in LuCI's native **System → System → General Settings**.
 
 The sole update source is the official Release attachment [`athena-release.json`](https://github.com/NXN-MAX/OpenWRT-Athena/releases/latest/download/athena-release.json). There is no GitHub API, branch or mirror fallback. An unavailable or invalid manifest produces an error. The updater validates the stable version, repository URL, archive name, size and SHA256, then verifies the downloaded archive. Only newer stable versions are installed.
 

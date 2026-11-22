@@ -19,6 +19,8 @@ test('upload permission is scoped to random Athena temporary files',()=>{
  const acl=JSON.parse(read('root/usr/share/rpcd/acl.d/luci-theme-athena.json'))['luci-theme-athena'];assert.deepEqual(Object.keys(acl.write.file),['/tmp/athena-upload-*.tmp']);assert(!acl.write.ubus.file);
 });
 test('native settings use the canonical renamed route',()=>{
- const menu=JSON.parse(read('root/usr/share/luci/menu.d/luci-theme-athena.json'));assert.equal(menu['admin/system/Athena-config'].action.path,'athena-config');
+ const menu=JSON.parse(read('root/usr/share/luci/menu.d/luci-theme-athena.json'));
+ assert.equal(menu['admin/system/athena'].action.path,'athena-config');
+ assert.deepEqual(menu['admin/system/Athena-config'].action,{type:'alias',path:'admin/system/athena'});
  const source=read('htdocs/luci-static/resources/view/athena-config.js');assert.doesNotMatch(source,/wallpaper|blur|opacity|updateTheme|bing|unsplash|dark_color/);
 });

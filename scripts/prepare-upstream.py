@@ -5,7 +5,6 @@ Does not commit, sign off, push, install, or modify the independent edition.
 """
 import argparse
 import ast
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -37,6 +36,10 @@ def upstream(destination):
     if not any((destination / 'root/usr/libexec').iterdir()):
         (destination / 'root/usr/libexec').rmdir()
     version = json.loads((BASE / 'package.json').read_text())['version']
+    standalone_make = (BASE / 'Makefile').read_text()
+    postrm = standalone_make[standalone_make.index('define Package/luci-theme-athena/postrm\n'):].split('\nendef', 1)[0] + '\nendef'
+    for filename in ('version', 'release-version'):
+        (destination / 'htdocs/luci-static/athena' / filename).unlink(missing_ok=True)
     (destination / 'Makefile').write_text('''# SPDX-License-Identifier: Apache-2.0
 include $(TOPDIR)/rules.mk
 
@@ -58,12 +61,13 @@ define Package/luci-theme-athena/conffiles
 /etc/config/athena
 endef
 
-define Package/luci-theme-athena/postrm
-#!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || {
-\tuci -q delete luci.themes.Athena
-\tuci commit luci
-}
+''' + postrm + '''
+
+define Build/Prepare/luci-theme-athena
+\t$(CP) $(CURDIR)/LICENSE $(PKG_BUILD_DIR)/
+\t$(INSTALL_DIR) $(PKG_BUILD_DIR)/licenses
+\t$(CP) $(CURDIR)/licenses/gravity-ui-icons-MIT.txt $(PKG_BUILD_DIR)/licenses/
+\t$(SED) 's|@ATHENA_VERSION@|$(PKG_VERSION)|g' $(PKG_BUILD_DIR)/root/usr/share/rpcd/ucode/luci.athena
 endef
 
 include ../../luci.mk
@@ -82,6 +86,9 @@ exit 0
     source = rpc.read_text().replace('// Athena assets and GitHub releases, native rpcd ucode.', '// SPDX-License-Identifier: Apache-2.0\n// Athena asset management, native rpcd ucode.')
     source = source.replace(', rmdir }', ' }').replace("const updateRoot = '/var/run/athena-update';\n", '')
     source = source[:source.index('function newer(')] + source[source.index('function u32('):]
+    source = re.sub(r'^function currentVersion\(\).*$',
+                    "const version = '@ATHENA_VERSION@';", source, flags=re.M)
+    source = source.replace('version: currentVersion()', 'version')
     source = re.sub(r'^  (check_update|update_status|start_update):.*\n', '', source, flags=re.M)
     rpc.write_text(source)
     acl = destination / 'root/usr/share/rpcd/acl.d/luci-theme-athena.json'
@@ -93,7 +100,8 @@ exit 0
     acl.write_text(json.dumps(value, indent=2) + '\n')
     menu = destination / 'root/usr/share/luci/menu.d/luci-theme-athena.json'
     value = json.loads(menu.read_text())
-    value['admin/system/Athena-config']['title'] = 'Athena theme'
+    value.pop('admin/system/Athena-config', None)
+    value['admin/system/athena']['title'] = 'Athena theme'
     menu.write_text(json.dumps(value, indent=2) + '\n')
     view = destination / 'htdocs/luci-static/resources/view/athena-config.js'
     source = view.read_text()
@@ -138,6 +146,10 @@ exit 0
     header = destination / 'ucode/template/themes/athena/header.ut'
     source = header.read_text().replace("const mode_labels = substr(dispatcher.lang, 0, 2) == 'zh' ? { light: '日光模式', dark: '暗黑模式', system: '跟随系统' } : { light: 'Light mode', dark: 'Dark mode', system: 'Follow system' };", "const mode_labels = { light: _('Light mode'), dark: _('Dark mode'), system: _('Follow system') };")
     source = source.replace("substr(dispatcher.lang, 0, 2) == 'zh' ? '外观模式' : 'Appearance'", "_('Appearance')")
+    source = re.sub(r'^  const asset_version = .*\n', '', source, flags=re.M)
+    source = re.sub(r'^  const theme_version = .*$',
+                    "  const theme_version = '{# PKG_VERSION #}';", source, flags=re.M)
+    source = source.replace('asset_version', 'theme_version')
     header.write_text(source)
     auth = destination / 'ucode/template/themes/athena/sysauth.ut'
     source = auth.read_text()
@@ -154,18 +166,12 @@ exit 0
     (destination / 'scripts').mkdir()
     (destination / 'scripts/build.mjs').write_text("""import '../tests/make-icon.mjs';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
 const result = spawnSync('node_modules/.bin/tailwindcss', ['-i', 'style-src/styles.css', '-o', 'htdocs/luci-static/athena/athena.css', '--minify'], { stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status || 1);
 const cssPath = 'htdocs/luci-static/athena/athena.css';
 const css = readFileSync(cssPath, 'utf8');
 if (!css.endsWith('\\n')) writeFileSync(cssPath, css + '\\n');
-const walk = path => readdirSync(path, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name)).flatMap(entry => entry.isDirectory() ? walk(join(path, entry.name)) : [join(path, entry.name)]);
-const digest = createHash('sha256');
-for (const path of walk('htdocs').filter(path => !path.endsWith('/version'))) digest.update(readFileSync(path));
-writeFileSync('htdocs/luci-static/athena/version', digest.digest('hex').slice(0,12) + '\\n');
 """)
     (destination / 'tests/fixtures').mkdir(parents=True)
     for name in ['native-dom.test.mjs', 'summary.test.mjs', 'theme.test.mjs', 'rpc.uc']:
@@ -196,8 +202,9 @@ System → System → Language and Style without changing the selected theme.
 The theme includes light, dark and system appearance, responsive navigation,
 native LuCI form/table adapters, status summaries, and optional local login
 assets. The asset RPC has scoped ACLs and validates paths, formats and sizes.
-Normal LuCI UCI save/apply and application polling remain in place. Uninstalling
-the package removes only its theme registration; local settings are retained.
+Normal LuCI UCI save/apply and application polling remain in place. Upgrades
+preserve uploaded assets. Uninstalling Athena removes its registration and
+uploaded assets, and selects an installed theme if Athena was active.
 
 ## Build and development
 
@@ -232,11 +239,6 @@ Bootstrap, HeroUI and Gravity Icons attribution. Apache-2.0 and MIT apply.
                 raise ValueError('Unexpected binary contribution: ' + str(file))
             if data and not data.endswith(b'\n'):
                 file.write_bytes(data + b'\n')
-    digest = hashlib.sha256()
-    for file in sorted((destination / 'htdocs').rglob('*')):
-        if file.is_file() and file.name != 'version':
-            digest.update(file.read_bytes())
-    (destination / 'htdocs/luci-static/athena/version').write_text(digest.hexdigest()[:12] + '\n')
     print('Prepared upstream edition: ' + str(destination))
 
 

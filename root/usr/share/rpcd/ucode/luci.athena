@@ -1,6 +1,6 @@
 // Athena assets and GitHub releases, native rpcd ucode.
 'use strict';
-import { readfile, writefile, lstat, mkdir, chmod, rename, unlink, lsdir, popen, rmdir } from 'fs';
+import { readfile, writefile, open, stat, lstat, mkdir, chmod, rename, unlink, lsdir, popen, rmdir } from 'fs';
 import { statvfs } from 'luci.core';
 const root = '/www/luci-static/athena/branding';
 const iconPattern = /^icon-[a-f0-9]{64}\.png$/;
@@ -23,7 +23,7 @@ function ensure() {
   if (lstat(root)?.type == 'link') die('Invalid asset directory');
   if (!lstat(root) && !mkdir(root, 0755)) die('Cannot create asset directory');
 }
-function currentVersion() { return trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.6'); }
+function currentVersion() { return trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.0'); }
 function get() {
   const files = [];
   for (let name in lsdir(root) ?? []) if (match(name, bgPattern) && regular(root + '/' + name)) push(files, { name, size: lstat(root + '/' + name).size });
@@ -115,26 +115,65 @@ function mediaType(data) {
   if (substr(head, 0, 8) == '1a45dfa3') return 'webm';
   return null;
 }
+function stageUpload(input, temp, size, kind) {
+  const background = kind == 'background';
+  const first = input.read(background ? 12 : size);
+  if (length(first) != (background ? 12 : size)) return { error: 'Cannot read upload' };
+  const ext = mediaType(first);
+  if (!ext || !background && (ext != 'png' || !png(first, kind == 'favicon')))
+    return { error: 'Use a valid PNG icon (16–1024 pixels), or a supported image/video background' };
+
+  const output = open(temp, 'wxe', 0600);
+  if (!output) return { error: 'Cannot stage upload' };
+  let remaining = size - length(first);
+  let complete = output.write(first) == length(first);
+  while (complete && remaining > 0) {
+    const bytes = min(remaining, 64 * 1024);
+    const chunk = input.read(bytes);
+    complete = length(chunk) == bytes && output.write(chunk) == bytes;
+    remaining -= bytes;
+  }
+  // Closing can report a write error if the filesystem ran out of space.
+  const closed = output.close();
+  if (!complete || !closed || stat('/proc/self/fd/' + input.fileno())?.size != size) {
+    unlink(temp);
+    return { error: 'Cannot copy upload or not enough free space' };
+  }
+  return { ext };
+}
 function install(args) {
   if (!(args.kind in ['logo', 'favicon', 'background']) || !match(args.token ?? '', /^[a-f0-9]{32}$/)) return { result: 1, error: 'Invalid upload request' };
   const source = '/tmp/athena-upload-' + args.token + '.tmp';
   const info = lstat(source), max = args.kind == 'background' ? 20*1024*1024 : 1024*1024;
   if (info?.type != 'file' || info.size < 16 || info.size > max) { if (info?.type == 'file') unlink(source); return { result: 1, error: 'Invalid upload size or file' }; }
-  const data = readfile(source), ext = mediaType(data);
-  if (!ext || args.kind != 'background' && (ext != 'png' || !png(data, args.kind == 'favicon'))) { unlink(source); return { result: 1, error: 'Use a valid PNG icon (16–1024 pixels), or a supported image/video background' }; }
-  const process = popen('/usr/bin/sha256sum ' + source, 'r');
-  const digest = substr(process?.read('all') ?? '', 0, 64); const code = process?.close();
-  if (code != 0 || !match(digest, /^[a-f0-9]{64}$/)) { unlink(source); return { result: 1, error: 'Cannot verify upload' }; }
   ensure();
-  const name = (args.kind == 'background' ? 'bg-' : 'icon-') + digest + '.' + ext;
-  const destination = root + '/' + name;
-  if (lstat(destination)?.type == 'link') { unlink(source); return { result: 1, error: 'Invalid asset destination' }; }
-  if (!regular(destination)) {
-    if (writefile(destination + '.tmp', data) != length(data)) { unlink(destination + '.tmp'); unlink(source); return { result: 1, error: 'Not enough free space' }; }
-    chmod(destination + '.tmp', 0644);
-    if (!rename(destination + '.tmp', destination)) { unlink(source); die('Cannot install upload'); }
+  const input = open(source, 're');
+  const opened = input ? stat('/proc/self/fd/' + input.fileno()) : null;
+  if (opened?.type != 'file' || opened.inode != info.inode || opened.size != info.size ||
+      opened.dev.major != info.dev.major || opened.dev.minor != info.dev.minor) {
+    if (input) input.close();
+    return { result: 1, error: 'Upload changed before it could be read' };
   }
+  const temp = root + '/.upload-' + args.token;
+  const staged = stageUpload(input, temp, info.size, args.kind);
+  input.close();
   unlink(source);
+  if (staged.error) return { result: 1, error: staged.error };
+
+  // Hash the staged bytes so the name identifies exactly what will be installed.
+  const process = popen('/usr/bin/sha256sum ' + temp, 'r');
+  const digest = substr(process?.read('all') ?? '', 0, 64); const code = process?.close();
+  if (code != 0 || !match(digest, /^[a-f0-9]{64}$/)) { unlink(temp); return { result: 1, error: 'Cannot verify upload' }; }
+  const name = (args.kind == 'background' ? 'bg-' : 'icon-') + digest + '.' + staged.ext;
+  const destination = root + '/' + name;
+  const existing = lstat(destination);
+  if (existing) {
+    unlink(temp);
+    if (existing.type != 'file') return { result: 1, error: 'Invalid asset destination' };
+  } else if (!chmod(temp, 0644) || !rename(temp, destination)) {
+    unlink(temp);
+    return { result: 1, error: 'Cannot install upload' };
+  }
   const value = state(); value[args.kind] = name; commit(value);
   for (let file in lsdir(root) ?? []) if (match(file, iconPattern) && file != value.logo && file != value.favicon) unlink(root + '/' + file);
   return get();

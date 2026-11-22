@@ -53,7 +53,7 @@ LuCI 標準のフィルター、インストール操作、タブ、パッケー
 
 ## 設定と更新
 
-**システム → Athena テーマ**：`/cgi-bin/luci/admin/system/Athena-config`。設定ファイルは `/etc/config/athena` です。初期外観、ログイン配置、素材を設定できます。手動で選んだ外観はブラウザーに保存されます。ホスト名は LuCI 標準の **システム → システム → 一般設定** で管理します。
+**システム → Athena テーマ**：`/cgi-bin/luci/admin/system/athena`。設定ファイルは `/etc/config/athena` です。初期外観、ログイン配置、素材を設定できます。手動で選んだ外観はブラウザーに保存されます。ホスト名は LuCI 標準の **システム → システム → 一般設定** で管理します。
 
 更新元は正式 Release 添付の [`athena-release.json`](https://github.com/NXN-MAX/OpenWRT-Athena/releases/latest/download/athena-release.json) のみです。GitHub API、ブランチ、ミラーには切り替えません。マニフェストを取得できない場合や無効な場合はエラーを表示します。安定版番号、公式 URL、ファイル名、サイズ、SHA256 を検証し、取得後にも照合します。現在より新しい安定版だけを許可します。
 

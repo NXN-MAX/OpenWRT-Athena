@@ -1,5 +1,5 @@
 'use strict';
-import { writefile,readfile,unlink,symlink,lsdir,rmdir } from 'fs';
+import { open,writefile,readfile,unlink,symlink,lsdir,rmdir,stat } from 'fs';
 const api=loadfile('/tmp/athena-rpc-test.uc')()['luci.athena'];
 let passed=0;
 function check(ok,label){if(!ok)die('FAIL: '+label);print('PASS: ',label,'\n');passed++;}
@@ -24,9 +24,30 @@ check(favicon.result==0 && favicon.favicon==result.logo,'install favicon sharing
 check(api.remove.call({args:{kind:'logo',name:''}}).result==0 && !api.get.call({}).logo,'reset icon');
 check(api.get.call({}).favicon==result.logo,'resetting logo preserves shared favicon');
 check(api.remove.call({args:{kind:'favicon',name:''}}).result==0 && !api.get.call({}).favicon,'reset favicon');
-writefile(file,readfile('/tmp/athena-test-icon.png'));
+// Cross several copy chunks using the upper size accepted for backgrounds.
+const maxBackground = 20 * 1024 * 1024;
+const chunk = sprintf('%65536s', 'test');
+const upload = open(file, 'w');
+const header = 'GIF89a', trailer = 'test';
+if (upload.write(header) != length(header)) die('Cannot write test header');
+for (let remaining = maxBackground - length(header) - length(trailer); remaining > 0; remaining -= length(chunk)) {
+  const bytes = min(remaining, length(chunk));
+  if (upload.write(substr(chunk, 0, bytes)) != bytes) die('Cannot write test background');
+}
+if (upload.write(trailer) != length(trailer) || !upload.close()) die('Cannot finish test background');
 const background=api.install.call({args:{kind:'background',token}});
-check(background.result==0 && length(background.files)==1,'install local background');
+check(background.result==0 && length(background.files)==1 && background.files[0].size==maxBackground && match(background.background,/\.gif$/),'stream a full-size background');
+const saved = '/tmp/athena-rpc-test-assets/' + background.background;
+const image = open(saved, 'r');
+image.seek(-4, 2);
+check(image.read(4)=='test','preserve the final bytes of a streamed background');
+image.close();
 check(api.select.call({args:{name:background.background}}).result==0,'select background');
+const oversized = open(file,'w');
+oversized.seek(maxBackground,0);
+oversized.write('x');
+oversized.close();
+check(api.install.call({args:{kind:'background',token}}).result==1 && !stat(file),'reject a background over the limit and clean up');
+check(!length(filter(lsdir('/tmp/athena-rpc-test-assets'), name=>match(name,/^\.upload-/))),'remove staged files after upload');
 check(api.remove.call({args:{kind:'background',name:background.background}}).result==0 && length(api.get.call({}).files)==0,'remove background');
 print(passed,' rpc tests passed\n');

@@ -1,8 +1,12 @@
 {
-  "admin/system/Athena-config": {
+  "admin/system/athena": {
     "title": "Athena主题",
     "order": 90,
     "action": { "type": "view", "path": "athena-config" },
     "depends": { "acl": ["luci-theme-athena"], "uci": {"athena": true} }
+  },
+  "admin/system/Athena-config": {
+    "action": { "type": "alias", "path": "admin/system/athena" },
+    "depends": { "acl": ["luci-theme-athena"], "uci": { "athena": true } }
   }
 }

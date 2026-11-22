@@ -81,7 +81,7 @@ ATHENA_SSH=/path/to/device-ssh python3 scripts/test-updater-device.py
 
 ## 配置
 
-系统 → Athena主题：`/cgi-bin/luci/admin/system/Athena-config`。
+系统 → Athena主题：`/cgi-bin/luci/admin/system/athena`。
 
 配置文件为 `/etc/config/athena`，保存主题色、默认外观模式和登录页布局。默认外观初始为「跟随系统」，也可选「暗黑模式」或「日光模式」。登录页与后台右上角复用同一个模式选择组件；手动选择会记在当前浏览器，尚未手动选择时使用主题设置的默认模式。设置页先显示主题更新，再显示外观与素材设置。自定义图标、浏览器图标和背景分开管理，正式版本检查和更新来自指定 GitHub 仓库。
 

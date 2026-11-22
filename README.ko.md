@@ -53,7 +53,7 @@ LuCI 기본 패키지 관리 흐름을 유지하면서 필터, 설치 작업, �
 
 ## 설정 및 업데이트
 
-**시스템 → Athena 테마**: `/cgi-bin/luci/admin/system/Athena-config`. 설정 파일은 `/etc/config/athena`입니다. 기본 외관, 로그인 배치와 이미지를 설정할 수 있습니다. 수동으로 고른 외관은 브라우저에 저장됩니다. 호스트 이름은 LuCI의 **시스템 → 시스템 → 일반 설정**에서 관리합니다.
+**시스템 → Athena 테마**: `/cgi-bin/luci/admin/system/athena`. 설정 파일은 `/etc/config/athena`입니다. 기본 외관, 로그인 배치와 이미지를 설정할 수 있습니다. 수동으로 고른 외관은 브라우저에 저장됩니다. 호스트 이름은 LuCI의 **시스템 → 시스템 → 일반 설정**에서 관리합니다.
 
 업데이트의 유일한 출처는 정식 Release 첨부 파일 [`athena-release.json`](https://github.com/NXN-MAX/OpenWRT-Athena/releases/latest/download/athena-release.json)입니다. GitHub API, 저장소 브랜치나 미러로 대체하지 않습니다. 매니페스트를 가져올 수 없거나 유효하지 않으면 오류를 표시합니다. 안정 버전, 공식 URL, 파일명, 크기와 SHA256을 확인하고 다운로드 후 다시 검증합니다. 현재보다 새로운 안정 버전만 설치합니다.
 

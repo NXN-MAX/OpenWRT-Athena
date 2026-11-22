@@ -53,7 +53,7 @@ Le fichier `/etc/config/athena` et les médias existants sont conservés. Avant 
 
 ## Réglages et mises à jour
 
-**Système → Thème Athena** : `/cgi-bin/luci/admin/system/Athena-config`. La configuration se trouve dans `/etc/config/athena`. Réglez l’apparence initiale, la disposition de connexion et les médias. Le choix manuel de l’apparence est mémorisé par le navigateur. Le nom d’hôte reste dans les réglages natifs **Système → Système → Général** de LuCI.
+**Système → Thème Athena** : `/cgi-bin/luci/admin/system/athena`. La configuration se trouve dans `/etc/config/athena`. Réglez l’apparence initiale, la disposition de connexion et les médias. Le choix manuel de l’apparence est mémorisé par le navigateur. Le nom d’hôte reste dans les réglages natifs **Système → Système → Général** de LuCI.
 
 L’unique source des mises à jour est la pièce jointe de la Release officielle [`athena-release.json`](https://github.com/NXN-MAX/OpenWRT-Athena/releases/latest/download/athena-release.json). Aucun repli vers l’API GitHub, une branche ou un miroir. Si le manifeste est indisponible ou invalide, une erreur s’affiche. Le thème vérifie la version stable, l’URL officielle, le nom, la taille et le SHA256, puis contrôle l’archive téléchargée. Seules les versions stables plus récentes sont installables.
 
