@@ -152,20 +152,25 @@ exit 0
     }
     (destination / 'package.json').write_text(json.dumps(package, indent=2) + '\n')
     (destination / 'scripts').mkdir()
-    (destination / 'scripts/build.mjs').write_text("""import { spawnSync } from 'node:child_process';
+    (destination / 'scripts/build.mjs').write_text("""import '../tests/make-icon.mjs';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 const result = spawnSync('node_modules/.bin/tailwindcss', ['-i', 'style-src/styles.css', '-o', 'htdocs/luci-static/athena/athena.css', '--minify'], { stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status || 1);
+const cssPath = 'htdocs/luci-static/athena/athena.css';
+const css = readFileSync(cssPath, 'utf8');
+if (!css.endsWith('\\n')) writeFileSync(cssPath, css + '\\n');
 const walk = path => readdirSync(path, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name)).flatMap(entry => entry.isDirectory() ? walk(join(path, entry.name)) : [join(path, entry.name)]);
 const digest = createHash('sha256');
 for (const path of walk('htdocs').filter(path => !path.endsWith('/version'))) digest.update(readFileSync(path));
-writeFileSync('htdocs/luci-static/athena/version', digest.digest('hex').slice(0,12));
+writeFileSync('htdocs/luci-static/athena/version', digest.digest('hex').slice(0,12) + '\\n');
 """)
     (destination / 'tests/fixtures').mkdir(parents=True)
-    for name in ['native-dom.test.mjs', 'summary.test.mjs', 'theme.test.mjs', 'rpc.uc', 'fixtures/icon.png']:
+    for name in ['native-dom.test.mjs', 'summary.test.mjs', 'theme.test.mjs', 'rpc.uc']:
         shutil.copy2(BASE / 'tests' / name, destination / 'tests' / name)
+    shutil.copy2(BASE / 'tests/upstream/make-icon.mjs', destination / 'tests/make-icon.mjs')
     (destination / 'tests/translations.json').write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n')
     # Existing DOM regressions use a Chinese fixture, now backed by a gettext stub.
     test_file = destination / 'tests/native-dom.test.mjs'
@@ -179,6 +184,8 @@ writeFileSync('htdocs/luci-static/athena/version', digest.digest('hex').slice(0,
     test_file.write_text(source)
     shutil.copy2(BASE / 'tests/upstream/settings.mjs', destination / 'tests/settings.test.mjs')
     shutil.copy2(BASE / 'scripts/test-device.sh', destination / 'scripts/test-device.sh')
+    device_test = destination / 'scripts/test-device.sh'
+    device_test.write_text(re.sub(r'^(ATHENA_SSH_CMD=.*)$', r'\1\nnode "$BASE/tests/make-icon.mjs"', device_test.read_text(), flags=re.M))
     (destination / 'README.md').write_text('''# Athena LuCI theme
 
 A native ucode/JavaScript theme using HeroUI's framework-independent CSS.
@@ -216,12 +223,20 @@ The popover and theme-transition integrations have progressive fallbacks;
 reduced-motion preferences are respected. See NOTICE and licenses/ for
 Bootstrap, HeroUI and Gravity Icons attribution. Apache-2.0 and MIT apply.
 ''')
-    (destination / '.gitignore').write_text('node_modules/\n!package-lock.json\n')
+    (destination / '.gitignore').write_text('node_modules/\n!package-lock.json\ntests/fixtures/*.png\n')
+    for file in destination.rglob('*'):
+        if file.is_file():
+            data = file.read_bytes()
+            data.decode('utf-8')
+            if b'\0' in data:
+                raise ValueError('Unexpected binary contribution: ' + str(file))
+            if data and not data.endswith(b'\n'):
+                file.write_bytes(data + b'\n')
     digest = hashlib.sha256()
     for file in sorted((destination / 'htdocs').rglob('*')):
         if file.is_file() and file.name != 'version':
             digest.update(file.read_bytes())
-    (destination / 'htdocs/luci-static/athena/version').write_text(digest.hexdigest()[:12])
+    (destination / 'htdocs/luci-static/athena/version').write_text(digest.hexdigest()[:12] + '\n')
     print('Prepared upstream edition: ' + str(destination))
 
 

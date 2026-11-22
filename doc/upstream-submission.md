@@ -1,7 +1,7 @@
-# LuCI 官方收录准备
+# LuCI 官方收录进度
 
 候选目标为 `openwrt/luci` 的 `master`，包目录为 `themes/luci-theme-athena`。
-自有签名源与官方收录是两条独立发布渠道；创建 fork 或 PR 不表示已经获得官方收录。
+已提交 [openwrt/luci PR #9291](https://github.com/openwrt/luci/pull/9291)，由 `NXN-MAX/luci:add-athena` 请求合入官方 `master`。自有签名源与官方收录是两条独立发布渠道；PR 已创建，不代表已获官方接纳。
 
 ## 候选版的调整
 
@@ -14,6 +14,7 @@
 - SDK 直接使用仓库中的预构建 CSS。CSS 开发源码置于 `style-src/`，避免 LuCI 将 `src/` 误判为需要执行原生 `make install` 的目录。
 - 仅对本包关闭旧式 CSS 压缩和 ucode 模板预编译，不覆盖全局构建配置。
 - 保留完整第三方许可与模板来源说明；不把 README 截图、上传素材或 Node.js 依赖打入设备包。
+- 按官方形式检查要求，所有文本保留末尾换行；RPC 测试的 PNG 由 Node.js 源码生成，不提交二进制测试文件。
 
 ## 生成与审查
 
@@ -50,8 +51,10 @@ SDK 构建通过不代表已在 24.10 设备上完成运行测试，也不代表
 ## 提交前的声明
 
 [LuCI 贡献规范](https://github.com/openwrt/luci/blob/master/CONTRIBUTING.md)要求每个提交使用真实姓名、非 GitHub noreply 邮箱，并包含 Signed-off-by。
-已提供的维护者信息为 `ZHICHENG CHEN <czhic1996@gmail.com>`。添加该声明前，仍需维护者明确确认有权按 [DCO](https://developercertificate.org/)贡献代码及素材；姓名和邮箱本身不代替该确认。
+维护者已于 2026-11-22 明确同意 [DCO](https://developercertificate.org/)，并授权使用 `ZHICHENG CHEN <czhic1996@gmail.com>` 添加 Signed-off-by；官方贡献提交已包含该声明。
 
 Git 提交的加密签名、DCO 的 Signed-off-by，以及软件源包签名是不同机制。官方机器人会对未验证的 Git 提交签名给出警告；这不会被 Athena 的软件源签名替代。
 
-确认 DCO 后，使用本地功能分支创建带正文的提交，再添加 Signed-off-by 并推送到自己的 LuCI fork。PR 应指向 `openwrt/luci:master`；当前只准备候选代码与说明，尚未声明被官方接纳。
+PR 指向 `openwrt/luci:master`。官方机器人要求提交邮箱已关联到 GitHub 账号；该邮箱的添加和验证需由维护者在 [GitHub 邮箱设置](https://github.com/settings/emails)完成。来自首次贡献 fork 的官方 Actions 需要 LuCI 维护者批准运行。
+
+提交后应持续修订同一功能分支并保留 Signed-off-by；不关闭并重建 PR 来处理形式问题。
