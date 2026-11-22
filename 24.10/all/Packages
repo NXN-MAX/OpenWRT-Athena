@@ -1,5 +1,5 @@
 Package: luci-theme-athena
-Version: 0.0.6-r1
+Version: 0.0.7-r1
 Depends: libc, luci-base, rpcd-mod-ucode, ucode-mod-fs, ucode-mod-uci, curl, ca-bundle
 Source: /feed/luci-theme-athena
 SourceName: luci-theme-athena
@@ -11,7 +11,7 @@ Maintainer: NXN-MAX
 Architecture: all
 Installed-Size: 501760
 Description:  Athena native HeroUI theme
-Filename: luci-theme-athena_0.0.6-r1_all.ipk
-Size: 90402
-SHA256sum: 76512487e7b40d6ab198a4a4d5aa97bcf005ca28696dd76c9ab402ba9bce6e60
+Filename: luci-theme-athena_0.0.7-r1_all.ipk
+Size: 91417
+SHA256sum: 0a0fdf27ae5f8684a53929fce89bc01e95fff411b13e1ab984fc3b7ec1388d61
 
