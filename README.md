@@ -91,6 +91,12 @@ ATHENA_SSH=/path/to/device-ssh python3 scripts/test-updater-device.py
 
 图标使用 PNG，16–1024 像素，最大 1 MiB；浏览器图标必须为正方形。背景支持 JPG、PNG、GIF、WebP、MP4、WebM，单个文件最大 20 MiB。上传经 LuCI 原生接口认证，ucode 验证文件类型、尺寸和路径后以 SHA256 文件名存储；设置清单原子写入。SVG/HTML 上传被拒绝。
 
+## 签名软件源
+
+推荐使用 [Athena 自有签名源](doc/signed-feed.md)安装和更新：支持 OpenWrt 24.10 的 opkg/IPK 与 25.12 的 APKv3，固定公钥验证，无需关闭签名检查。启用源后请通过 LuCI 软件管理更新，保持包管理器版本记录一致。此源为第三方源，官方收录尚在准备。
+
+以下为独立 Release 文件的手动安装方式。
+
 ## OpenWrt 安装包
 
 正式 Release 同时提供官方 SDK 构建的两种安装格式（架构 `all`）：

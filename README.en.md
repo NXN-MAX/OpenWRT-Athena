@@ -34,6 +34,10 @@ A consistent layout for native LuCI filters, installation controls, tabs and pac
 - Custom PNG logo/favicon and uploaded image or video backgrounds.
 - Stable release checks, archive verification and rollback backups.
 
+## Signed package feed
+
+Use the [Athena signed feed](doc/signed-feed.md) for opkg/IPK on OpenWrt 24.10 or APKv3 on 25.12. Public-key verification stays enabled. Update through the native package manager after enabling the feed. This is an independent third-party feed; upstream inclusion is being prepared. The following instructions cover standalone Release files.
+
 ## Installation
 
 Download the appropriate package from [Releases](https://github.com/NXN-MAX/OpenWRT-Athena/releases). Verify its checksum against `SHA256SUMS` before installing.

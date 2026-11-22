@@ -34,6 +34,10 @@ Une présentation cohérente des filtres, actions d’installation, onglets et t
 - Logo et favicon PNG personnalisés, fonds image ou vidéo téléversés.
 - Recherche de versions stables, vérification des archives et sauvegardes de restauration.
 
+## Dépôt de paquets signés
+
+Le [dépôt signé Athena](doc/signed-feed.md) prend en charge opkg/IPK sur OpenWrt 24.10 et APKv3 sur 25.12, sans désactiver la vérification des signatures. Après activation, utilisez le gestionnaire de paquets natif pour les mises à jour. Ce dépôt tiers est indépendant ; la préparation de son inclusion officielle est en cours. Les instructions suivantes concernent les fichiers Release téléchargés séparément.
+
 ## Installation
 
 Téléchargez le paquet adapté depuis les [Releases](https://github.com/NXN-MAX/OpenWRT-Athena/releases) et vérifiez-le avec `SHA256SUMS`. Copiez-le dans `/tmp`, puis exécutez la commande correspondante.

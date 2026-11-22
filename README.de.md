@@ -34,6 +34,10 @@ Einheitliche Filter, Installationsaktionen, Tabs und Pakettabellen für LuCI; de
 - Eigene PNG-Logos und Favicons sowie hochgeladene Bild- oder Videohintergründe.
 - Prüfung stabiler Versionen, Archivprüfung und Sicherungen zur Wiederherstellung.
 
+## Signierte Paketquelle
+
+Die [signierte Athena-Paketquelle](doc/signed-feed.md) unterstützt opkg/IPK auf OpenWrt 24.10 und APKv3 auf 25.12 bei aktivierter Signaturprüfung. Verwenden Sie nach der Einrichtung die native Paketverwaltung für Updates. Dies ist eine unabhängige Drittanbieterquelle; die offizielle Aufnahme wird vorbereitet. Die folgenden Schritte gelten für einzeln heruntergeladene Release-Dateien.
+
 ## Installation
 
 Laden Sie das passende Paket unter [Releases](https://github.com/NXN-MAX/OpenWRT-Athena/releases) herunter und prüfen Sie es mit `SHA256SUMS`. Kopieren Sie es nach `/tmp` und führen Sie den passenden Befehl aus.

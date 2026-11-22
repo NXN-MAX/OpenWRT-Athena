@@ -3,3 +3,7 @@ dist/
 .DS_Store
 *.next
 htdocs/luci-static/athena/branding/
+__pycache__/
+*.pyc
+*.sec
+*.private.pem
