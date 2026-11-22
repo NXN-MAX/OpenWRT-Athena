@@ -22,7 +22,7 @@
   const logo = asset(branding.logo, false) ?? media + '/logo.svg';
   const favicon = asset(branding.favicon, false) ?? media + '/logo.svg';
   const asset_version = trim(readfile('/www/luci-static/athena/version') ?? '2');
-  const background = asset(branding.background, true) ?? media + '/login.svg?v=' + asset_version;
+  const background = asset(branding.background, true);
   const login_style = uci.get('athena', 'global', 'login_style') == 'centered' ? 'centered' : 'classic';
   const configured_mode = uci.get('athena', 'global', 'default_mode');
   const default_mode = configured_mode in ['light', 'dark', 'system'] ? configured_mode : 'system';
@@ -41,6 +41,7 @@
   <meta name="color-scheme" content="light dark">
   <title>{{ hostname }}{{ node?.title ? ` | ${striptags(_(node.title))}` : '' }} · Athena</title>
   <link rel="icon" href="{{ favicon }}">
+  {% if (blank_page && !background): %}<link rel="preload" as="image" href="{{ media }}/login.svg" fetchpriority="high">{% endif %}
   <script src="{{ media }}/theme.js?v={{ asset_version }}"></script>
   <link id="athena-stylesheet" rel="stylesheet" href="{{ media }}/athena.css?v={{ asset_version }}">
   <style>:root{--athena-accent:{{ primary }};}</style>
@@ -57,8 +58,9 @@
   <button type="button" class="button button--ghost button--icon-only" data-theme-choice="{{ choice.value }}" aria-label="{{ mode_labels[choice.value] }}" title="{{ mode_labels[choice.value] }}" aria-pressed="{{ default_mode == choice.value ? 'true' : 'false' }}"><svg class="athena-icon" aria-hidden="true"><use href="{{ media }}/icons/sprite.svg#{{ choice.icon }}"></use></svg></button>
   {% endfor %}
 </div>
-{% if (blank_page && background): %}
-  {% if (match(background, /\.(mp4|webm)$/)): %}<video class="athena-login-background" autoplay loop muted playsinline src="{{ background }}"></video>
+{% if (blank_page): %}
+  {% if (!background): %}<div class="athena-login-background athena-login-art" aria-hidden="true"></div>
+  {% elif (match(background, /\.(mp4|webm)$/)): %}<video class="athena-login-background" autoplay loop muted playsinline src="{{ background }}"></video>
   {% else %}<img class="athena-login-background" src="{{ background }}" alt="">{% endif %}
 {% endif %}
 {% if (!blank_page): %}

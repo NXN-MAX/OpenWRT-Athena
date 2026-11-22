@@ -50,12 +50,19 @@ function parseRelease(release) {
 }
 function checkUpdate() {
   if (!regular('/usr/bin/curl')) return { result: 1, error: 'curl is required for GitHub updates' };
-  const command = "/usr/bin/curl --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 5 --max-time 15 --max-filesize 1048576 -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' -A 'Athena-Theme' -w '\\n%{http_code}' 'https://api.github.com/repos/NXN-MAX/OpenWRT-Athena/releases/latest' 2>/dev/null";
+  // This official Release asset is the sole version source; no GitHub API,
+  // repository branch, third-party mirror or credentials are involved.
+  const command = "/usr/bin/curl --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 5 --max-time 15 --max-filesize 65536 -A 'Athena-Theme' -w '\\n%{http_code}' 'https://github.com/NXN-MAX/OpenWRT-Athena/releases/latest/download/athena-release.json' 2>/dev/null";
   const process = popen(command, 'r'), output = process?.read('all') ?? '', code = process?.close();
   const status = substr(output, -3);
-  if (status == '404') return { result: 0, current: currentVersion(), available: false, status: 'unreleased' };
-  if (code != 0 || status != '200') return { result: 1, error: status == '403' || status == '429' ? 'GitHub API rate limit; try again later' : 'Cannot reach GitHub releases (HTTP ' + status + ')' };
-  try { return parseRelease(json(substr(output, 0, length(output)-4))); } catch(e) { return { result: 1, error: 'Invalid GitHub response' }; }
+  if (code != 0 || status != '200') return { result: 1, error: status == '404' ? 'Release manifest is not published' : 'Cannot reach GitHub release manifest (HTTP ' + status + ')' };
+  try {
+    const manifest = json(substr(output, 0, length(output)-4));
+    if (manifest?.schema != 'athena-release-v1' || manifest.draft !== false || manifest.prerelease !== false) return { result: 1, error: 'Invalid release manifest' };
+    const result = parseRelease(manifest);
+    if (result.result != 0 || !result.digest) return { result: 1, error: 'Invalid release manifest' };
+    return result;
+  } catch(e) { return { result: 1, error: 'Invalid release manifest' }; }
 }
 function updateStatus(args) {
   const job = args.job || trim(readfile(updateRoot + '/current') ?? '');

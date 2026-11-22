@@ -113,7 +113,8 @@ jobs:
         run: |
           VERSION=$(node -p 'require("./package.json").version')
           TAG="v$VERSION"
-          (cd dist && sha256sum *.ipk *.apk > SHA256SUMS)
+          node scripts/release-manifest.mjs dist "$VERSION"
+          (cd dist && sha256sum *.ipk *.apk athena-release.json > SHA256SUMS)
           cat > release-notes.md <<'NOTES'
           OpenWrt installable Athena theme packages.
 

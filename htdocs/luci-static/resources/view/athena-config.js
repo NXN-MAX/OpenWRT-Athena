@@ -21,16 +21,15 @@ function errorMessage(error){ui.addNotification(null,E('p',{},error.message),'er
 function token(){const data=new Uint8Array(16);crypto.getRandomValues(data);return [...data].map(value=>value.toString(16).padStart(2,'0')).join('');}
 function upgradeError(error){
  const messages={
-  'GitHub API rate limit; try again later':'GitHub 请求次数已达上限，请稍后再试。',
+  'Release manifest is not published':'正式版本尚未提供更新清单。',
+  'Invalid release manifest':'正式版本更新清单无效或校验信息不完整。',
   'curl is required for GitHub updates':'请安装 curl 和 ca-bundle 后检查更新。',
-  'Invalid GitHub response':'GitHub 返回了无法识别的版本信息。',
-  'Invalid stable release':'GitHub 发布版本信息无效。',
   'No matching newer release. Check for updates again.':'没有匹配的新版本，请重新检查更新。',
   'Not enough free space for update and rollback backup':'空间不足，无法同时保存更新包和回滚备份。',
   'A theme update is already running':'主题更新正在进行，请稍候。'
  };
  if(zh&&messages[error.message])return messages[error.message];
- if(zh&&error.message.startsWith('Cannot reach GitHub releases'))return '暂时无法连接 GitHub，请稍后重试。';
+ if(zh&&error.message.startsWith('Cannot reach GitHub release manifest'))return '暂时无法连接 GitHub，请稍后重试。';
  return error.message;
 }
 return view.extend({

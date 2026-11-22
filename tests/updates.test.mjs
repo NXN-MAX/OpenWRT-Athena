@@ -27,8 +27,8 @@ test('an update-check retry clears a previous network error without replacing as
  c.api.upgradeRoot.querySelector('button').dispatchEvent(new c.window.Event('click'));await c.flush();
  assert(!c.api.upgradeRoot.textContent.includes('old network error'));assert.equal(c.api.assets,assets);
 });
-test('a failed release check disables a previously available update and localizes rate limits',async()=>{
+test('a missing release manifest disables a previously available update and explains the error',async()=>{
  const c=settings();c.api.release={latest:'2.0.1',available:true,status:'available'};c.api.renderUpgrade();
- c.setResult({result:1,error:'GitHub API rate limit; try again later'});c.api.upgradeRoot.querySelector('button').dispatchEvent(new c.window.Event('click'));await c.flush();
- assert(c.api.upgradeRoot.querySelectorAll('button')[1].hasAttribute('disabled'));assert.match(c.api.upgradeRoot.textContent,/请求次数已达上限/);assert.equal(c.api.assets.version,'2.0.0');
+ c.setResult({result:1,error:'Release manifest is not published'});c.api.upgradeRoot.querySelector('button').dispatchEvent(new c.window.Event('click'));await c.flush();
+ assert(c.api.upgradeRoot.querySelectorAll('button')[1].hasAttribute('disabled'));assert.match(c.api.upgradeRoot.textContent,/尚未提供更新清单/);assert.equal(c.api.assets.version,'2.0.0');
 });

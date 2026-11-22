@@ -1,3 +1,5 @@
+[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [العربية](README.ar.md)
+
 # Athena v0.0.4
 
 Athena 是原生 LuCI 主题。服务端模板和素材管理 RPC 均使用 **ucode**；浏览器端使用 LuCI 自带的 JavaScript、`form`、`ui`、`rpc`、`poll` 和 UCI 接口。主题不依赖 Lua 兼容层，也不包含 React、ReactDOM 或 Argon 的 CSS/脚本。默认登录页直接以原生 HTTP 表单提交，不在未认证状态启动 LuCI RPC；带脚本的认证插件保留原生初始化接口。
@@ -8,7 +10,7 @@ Athena 是原生 LuCI 主题。服务端模板和素材管理 RPC 均使用 **uc
 
 系统菜单中的「Athena主题」提供版本检查和在线更新。更新源固定为 [NXN-MAX/OpenWRT-Athena 的正式 Releases](https://github.com/NXN-MAX/OpenWRT-Athena/releases)。未发布正式版本时显示「暂无正式发布版本」；只允许安装比当前版本新的稳定版。
 
-发布包命名为 `luci-theme-athena-X.Y.Z.tar.gz`。更新接口核对仓库、版本标签、安装包名称、大小和 GitHub 提供的 SHA256 digest，下载后再次校验；拒绝路径穿越、链接文件和缺失关键文件的归档。模板与更新脚本先编译/检查，再替换主题自身文件，静态资源版本最后切换。状态文件放在 root 私有的 `/var/run/athena-update/`，安装过程不占用长时间 RPC 请求。
+发布包命名为 `luci-theme-athena-X.Y.Z.tar.gz`。更新检查只读取正式 Release 附件 `athena-release.json`（`releases/latest/download/athena-release.json`），不依赖 GitHub API、仓库分支或第三方镜像。清单由发布流程按实际归档生成，记录稳定版本、下载地址、字节数与 SHA256。更新接口核对仓库、版本标签、安装包名称、大小和清单中的 SHA256 digest，下载后再次校验；拒绝路径穿越、链接文件和缺失关键文件的归档。模板与更新脚本先编译/检查，再替换主题自身文件，静态资源版本最后切换。状态文件放在 root 私有的 `/var/run/athena-update/`，安装过程不占用长时间 RPC 请求。
 
 更新前，旧主题和 Athena 配置保存在 `/etc/athena/backups/`；复制失败会自动回滚。现有 Athena 配置与上传素材保留。更新成功后重新加载页面。备份可通过 `tar -xzf <备份文件> -C /` 恢复，再重载 rpcd。本更新方式安装原生预构建归档；通过 SDK 软件包安装时，包管理器的版本记录由对应软件包管理。
 
@@ -91,22 +93,6 @@ sh scripts/install.sh
 
 在系统 → 系统 → 语言和界面中选择其他已安装主题可切换外观。切换不会删除 Athena 设置与素材；卸载主题包前请先切换到其他主题。
 
-## 样式维护规范
-
-- 官方 HeroUI 样式位于 `components` layer；`src/styles.css` 负责设计变量和原生 LuCI 适配。原生应用会注入未分层的 CSS，因此适配规则保留为未分层规则，不能直接整体放入较低优先级的 layer。
-- Tailwind 关闭隐式自动扫描，只扫描 `htdocs` 与 `ucode`，避免测试、文档和开发脚本生成额外工具类。资源哈希按排序后的文件列表计算，保持不同目录中的构建结果稳定。
-- 使用颜色、圆角、间距、菜单阴影变量；表格内部和外部共同读取 `--athena-table-radius`。主题悬浮色与当前主题色计算关联。
-- 原生标题、正文、帮助文字、代码由 `athena/ui.js` 添加官方 `typography` 及类型类。保留原始元素、表单事件和语义层级；卡片、页面与弹窗使用对应视觉字号。登录品牌字样保留独立品牌样式。
-- 表格共用 `tableLayout()`，按原生结构识别数据表、键值表、成对统计表，不以页面 URL 新增规则。数据单元格共用文本、数字、地址、控件和操作类型，统一最小列宽、自然换行、数字对齐与横向溢出；窄容器中的统计表改为名称和数值两列。空状态在可见滚动区域居中，进度说明使用正常文档流，避免裁切。只为已有的包管理器和复杂接口控件保留必要的布局例外。
-- Table 外框不承担裁切；共享滚动适配器按实际宽度设置 `data-athena-overflow-x`，仅横向溢出时由滚动层保留圆角裁切和 ScrollShadow。内容能放下时不裁切，所有横向表格清除隐藏的纵向滚动偏移，防止刷新、聚焦后遮住表头或首行。
-- 概览四张卡片共用 `statusFrame()` 外框，负载、内存和存储再共用 `statusDisplay()` 百分比读数与说明；数字保持同一基线、同一字号，并预留字形空间。负载/内存使用只读 SVG 刻度盘；负载按 1 分钟平均负载除以在线 CPU 核数归一化，保留原始平均值，超过 100% 时读数保留实际值、指针停在刻度末端。CPU 核数由 ucode 模板读取 sysfs，不增加轮询 RPC。内存优先使用 available 计算占用，元数据缺失显示未知。
-- 存储使用双层 SVG 水面，液位由真实占用决定；点击、Enter/空格和容器宽度变化只触发有界的阻尼晃动，不改变占用数据。轻微波浪使用原生 CSS 动画，增强晃动只在短时 requestAnimationFrame 中计算，回稳后停止；页面隐藏及减少动态效果时暂停。没有引入 React、motion 或其他动画依赖。
-- 互联网卡片包含连接状态、WAN 地址、运行时间与更新时间；轮询只更新原有文本节点。最窄卡片隐藏运行时间前缀，保留时间数值，避免多行重叠。浅色模式下互联网和两张刻度盘采用轻微染色底色；较深过渡集中在底部约 6%，渐变在底部 30% 内淡出。保留与存储相同的原有边框，不增加彩色边框；存储和深色配色不受浅色规则影响。
-- 外观切换保留浅色、深色和跟随系统。支持原生 View Transition 时，新外观从所点右上角按钮中心直接圆形展开，覆盖整个视口，无下落或多雨滴动画。页面控件和表单节点保持原位；减少动态效果、后台页面或不支持该 API 时直接切换。连续切换、系统外观变化与动画超时会清理遮罩。
-- 浮层滚动继续使用官方 ScrollShadow。浮层底色与内容透明度分离，避免渐隐时透出模态遮罩；辅助底层不接收指针事件，并在菜单或提示关闭、移除时清理。
-- `body > .cbi-tooltip` 的显示状态由原生 LuCI 的内联透明度管理，主题默认透明；空提示不显示。原生隐藏时会移除 style 属性但保留旧内容，因此不能给该节点设置默认 `opacity:1`，否则会出现底部空气泡或旧提示复现。
-- 修改已有组件时应收敛原规则，避免在文件末尾继续追加同条件覆盖。`npm run build` 自动执行 `lint:styles`，检查自有 CSS 语法及同条件、同选择器的重复属性，允许响应式差异与浏览器前缀。生成的 `htdocs/luci-static/athena/athena.css` 不手工修改。
-
 ## 兼容性边界
 
 实际运行环境是 OpenWrt **25.12.6 / armsr/armv8**，采用 ucode 模板与 rpcd ucode 插件，保留原生应用 API 和 UCI 保存流程。23.05 的 ucode 开发方式是实现目标；本轮没有 23.05 设备或镜像的运行验证，因此不宣称完成 23.05 实测。浏览器需支持现代 CSS（包括 `:has()`、`color-mix()`）与现代 JavaScript。
@@ -121,6 +107,6 @@ sh scripts/install.sh
 - [Gravity UI Icons](https://github.com/gravity-ui/icons)：MIT；使用本地 SVG sprite，运行时不依赖图标库脚本。
 - [Pin UI Thermal Dial 示例](https://www.pinui.xyz/components/thermal-dial)：状态刻度盘的视觉与代码参考，按原生 SVG/CSS 重写并移除温度调节交互。
 - [Pin UI Theme Switch 示例](https://www.pinui.xyz/components/theme-switch)：外观覆盖切换的视觉参考；当前实现依照最终需求从按钮处直接展开，使用原生浏览器过渡接口。
-- [GitHub Releases 与发布资源 API](https://docs.github.com/en/rest/releases/assets)：稳定版发布包与 SHA256 digest 的接口依据。
+- [GitHub 正式 Release 附件链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)：唯一更新清单来源，使用 `releases/latest/download/athena-release.json`。
 
 Athena 代码采用 Apache-2.0。完整第三方许可位于 `licenses/`。

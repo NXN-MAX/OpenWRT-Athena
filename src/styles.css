@@ -385,10 +385,12 @@ body.modal-overlay-active #modal_overlay { display: flex; }
 /* Login composition only. Inputs, buttons and password controls use shared components. */
 body.athena-login-screen {
   --login-edge:#ffffffa8;
+  --login-stroke:#14161c;
   isolation:isolate;
 }
 :root[data-theme="dark"] body.athena-login-screen {
   --login-edge:#ffffff24;
+  --login-stroke:#dfe9f5;
 }
 .athena-login { display:grid; grid-template-columns:minmax(0,1fr) clamp(360px,42%,390px); min-block-size:100dvh; position:relative; }
 .athena-login-card { --athena-glass-tint-start:28%; --athena-glass-tint-end:14%; --athena-glass-blur:4px; grid-column:-2/-1; display:grid; align-content:center; justify-items:center; min-inline-size:0; padding:48px; border-inline-start:1px solid var(--login-edge); }
@@ -406,6 +408,9 @@ body.athena-login-screen {
   .athena-login-centered .athena-login-content { margin-block-start:0; }
 }
 .athena-login-background { position:fixed; inset:0; z-index:-2; inline-size:100%; block-size:100%; object-fit:cover; }
+/* Tint the original monochrome artwork in the page, avoiding Safari's
+   inconsistent prefers-color-scheme propagation into external SVG images. */
+.athena-login-art { background-color:var(--login-stroke); -webkit-mask:url('./login.svg') center/cover no-repeat; mask:url('./login.svg') center/cover no-repeat; }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
   .athena-login-card { background:var(--athena-bg); }
 }
