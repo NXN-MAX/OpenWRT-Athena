@@ -55,6 +55,6 @@ SDK 构建通过不代表已在 24.10 设备上完成运行测试，也不代表
 
 Git 提交的加密签名、DCO 的 Signed-off-by，以及软件源包签名是不同机制。官方机器人会对未验证的 Git 提交签名给出警告；这不会被 Athena 的软件源签名替代。
 
-PR 指向 `openwrt/luci:master`。官方机器人要求提交邮箱已关联到 GitHub 账号；该邮箱的添加和验证需由维护者在 [GitHub 邮箱设置](https://github.com/settings/emails)完成。来自首次贡献 fork 的官方 Actions 需要 LuCI 维护者批准运行。
+PR 指向 `openwrt/luci:master`。修订提交 `913f7a77f6da8e3aaac1895d00f3a098b52a7342` 已通过官方 FormalityCheck 的 Git & Commits、OpenWrt Makefiles 和 Code Patches 三项检查，邮箱关联项也已通过。来自首次贡献 fork 的官方 Actions 仍需要 LuCI 维护者批准运行。
 
 提交后应持续修订同一功能分支并保留 Signed-off-by；不关闭并重建 PR 来处理形式问题。
