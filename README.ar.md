@@ -2,7 +2,7 @@
 
 <div dir="rtl" lang="ar">
 
-# Athena v0.0.5
+# Athena v0.0.6
 
 Athena سمة أصلية لواجهة OpenWrt LuCI، مستوحاة من HeroUI. تستخدم قوالب ucode وخدمة rpcd وواجهات JavaScript والنماذج وUCI الأصلية في LuCI. لا تتضمن بيئة تشغيل React أو أنماط Argon، ولا تحتاج إلى Node.js على جهاز التوجيه.
 

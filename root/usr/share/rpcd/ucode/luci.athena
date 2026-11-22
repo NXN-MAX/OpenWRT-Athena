@@ -23,7 +23,7 @@ function ensure() {
   if (lstat(root)?.type == 'link') die('Invalid asset directory');
   if (!lstat(root) && !mkdir(root, 0755)) die('Cannot create asset directory');
 }
-function currentVersion() { return trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.5'); }
+function currentVersion() { return trim(readfile('/www/luci-static/athena/release-version') ?? '0.0.6'); }
 function get() {
   const files = [];
   for (let name in lsdir(root) ?? []) if (match(name, bgPattern) && regular(root + '/' + name)) push(files, { name, size: lstat(root + '/' + name).size });
