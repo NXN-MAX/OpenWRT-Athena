@@ -68,6 +68,11 @@ jobs:
           mkdir -p packages
           find bin/packages -type f -name 'luci-theme-athena*.${{ matrix.format }}' -exec cp {} packages/ \;
           test "$(find packages -type f | wc -l)" -eq 1
+      - name: Verify IPK configuration preservation
+        if: matrix.format == 'ipk'
+        run: |
+          tar -xOf packages/*.ipk ./control.tar.gz | tar -xzOf - ./conffiles | grep -Fx /etc/config/athena
+          tar -xOf packages/*.ipk ./control.tar.gz | tar -xzOf - ./control | grep -Fx 'Architecture: all'
       - uses: actions/upload-artifact@v4
         with:
           name: package-${{ matrix.format }}
