@@ -1,0 +1,13 @@
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+index 36ba788..9e1454b 100644
+--- a/eslint.config.mjs
++++ b/eslint.config.mjs
+@@ -84,7 +84,7 @@ export default defineConfig([
+ 	// JSON files
+ 	{
+ 		files: ['**/*.json'],
+-		ignores: ['package-lock.json'],
++		ignores: ['**/package-lock.json'],
+ 		plugins: { json },
+ 		language: 'json/json',
+ 		extends: ['json/recommended'],

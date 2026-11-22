@@ -23,6 +23,8 @@
 python3 scripts/prepare-upstream.py /path/to/luci/themes/luci-theme-athena
 ```
 
+LuCI 自身的 ESLint 原先仅排除仓库根目录的 package-lock.json。为保留主题开发依赖的锁文件，候选补丁将该排除规则扩展为 `**/package-lock.json`；这是开发检查配置，不影响设备构建或运行。生成后可在 LuCI checkout 执行 `git apply /path/to/Athena/doc/upstream-eslint.patch`。
+
 在 LuCI checkout 中生成翻译模板：
 
 ```sh
