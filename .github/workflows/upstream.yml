@@ -1,0 +1,58 @@
+name: Upstream candidate checks
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/prepare-upstream.py', '.github/workflows/upstream.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk: x86_64-24.10.4
+            format: ipk
+          - sdk: x86-64-25.12.6
+            format: apk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare upstream layout without Node.js
+        run: |
+          python3 scripts/prepare-upstream.py feed/themes/luci-theme-athena
+          curl --fail --location --retry 3 --max-time 60 https://raw.githubusercontent.com/openwrt/luci/f7675c07caf6b129cb8fedb5b683550422978e31/luci.mk -o feed/luci.mk
+          test ! -e feed/themes/luci-theme-athena/root/usr/libexec/athena-update
+          test ! -e feed/themes/luci-theme-athena/keys
+      - name: Build upstream candidate with official OpenWrt SDK
+        env:
+          SDK: ${{ matrix.sdk }}
+        run: |
+          curl --fail --location --retry 3 --max-time 60 https://raw.githubusercontent.com/openwrt/gh-action-sdk/f5813d30eeef3534b58ac7e79c5d8842b6035434/entrypoint.sh -o "$RUNNER_TEMP/sdk-entrypoint.sh"
+          sudo chown -R 1000:1000 "$GITHUB_WORKSPACE"
+          docker run --rm --entrypoint /bin/bash \
+            --env FILE_HOST=downloads.openwrt.org \
+            --env PACKAGES=luci-theme-athena --env V=s \
+            -v "$GITHUB_WORKSPACE:/artifacts" \
+            -v "$GITHUB_WORKSPACE/feed:/feed" \
+            -v "$RUNNER_TEMP/sdk-entrypoint.sh:/athena-entrypoint.sh:ro" \
+            "ghcr.io/openwrt/sdk:$SDK" /athena-entrypoint.sh
+      - name: Restore artifact ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+      - name: Collect candidate package
+        run: |
+          mkdir -p packages
+          find bin/packages -type f -name 'luci-theme-athena*.${{ matrix.format }}' -exec cp {} packages/ \;
+          test "$(find packages -type f | wc -l)" -eq 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upstream-${{ matrix.format }}
+          path: packages/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: upstream-logs-${{ matrix.format }}
+          path: logs/

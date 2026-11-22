@@ -14,6 +14,13 @@ apk --keys-dir "$stage/apk-keys" verify "$pkg" >/dev/null
 ok 'APK accepted by stock OpenWrt apk with Athena key'
 apk --keys-dir "$stage/apk-keys" verify public/25.12/noarch/packages.adb >/dev/null
 ok 'APK index accepted by stock OpenWrt apk'
+mkdir -p package-root fetched
+apk --root "$stage/package-root" --arch aarch64 \
+  --keys-dir "$stage/apk-keys" --repositories-file /dev/null \
+  --repository "$stage/public/25.12/noarch/packages.adb" --no-cache \
+  fetch --output "$stage/fetched" luci-theme-athena >/dev/null
+cmp "$pkg" fetched/*.apk
+ok 'native apk resolves and fetches the signed package from its index'
 reject 'APK rejected with another valid key' apk --keys-dir "$stage/wrong-keys" verify "$pkg"
 cp "$pkg" altered.apk
 printf 'BAD' | dd of=altered.apk bs=1 seek=16 conv=notrunc 2>/dev/null
