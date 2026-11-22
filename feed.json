@@ -1,0 +1,17 @@
+{
+  "schema": "athena-feed-v1",
+  "version": "0.0.6",
+  "third_party": true,
+  "opkg_fingerprint": "efe004bab7c083b3",
+  "files": {
+    "24.10/all/Packages": "8fd73928720f5be34904087cda567305f2c5e596fcdf7f488cd587b87840bcf8",
+    "24.10/all/Packages.gz": "e81553557a85ec12ba3f20343b1cdf664a6ddda35769840eff6fdd4db84687c2",
+    "24.10/all/Packages.sig": "443a5634fc65cdb2927f538eda84eaee15d4d27f633dac74e2ba026742c47991",
+    "24.10/all/luci-theme-athena_0.0.6-r1_all.ipk": "76512487e7b40d6ab198a4a4d5aa97bcf005ca28696dd76c9ab402ba9bce6e60",
+    "25.12/noarch/luci-theme-athena-0.0.6-r1.apk": "7a03434ca4d93a5fc46161dc0726fe156529ce5f13d83fe01895c2f783fab674",
+    "25.12/noarch/packages.adb": "3022b367e8f4b37c4b93b627e1c577e85598be56d38b56ba41f9b59b3f7b59d0",
+    "keys/athena-apk.pub.pem": "6fc101f3c59dd1a98a1f3e172eb768f79e1298d1e09b9ec0bd34874b8aee3420",
+    "keys/athena-opkg.pub": "f54629556f98e848b5e8b04ad7b53c730bed33ce22da7591c70d24bcc1f178da",
+    "opkg-fingerprint.txt": "ce3adf59897c6cf4137af1c3d174040cb401a094c7ce22ac9014e4501b8e8648"
+  }
+}
