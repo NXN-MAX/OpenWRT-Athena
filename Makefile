@@ -15,3 +15,5 @@ include ../../luci.mk
 else
 include $(TOPDIR)/feeds/luci/luci.mk
 endif
+
+# call BuildPackage - OpenWrt buildroot signature

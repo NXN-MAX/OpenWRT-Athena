@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths: ['package.json', '.github/workflows/release.yml']
+    paths: ['package.json', 'Makefile', '.github/workflows/release.yml']
   workflow_dispatch:
 permissions:
   contents: write
