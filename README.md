@@ -1,6 +1,6 @@
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [العربية](README.ar.md)
 
-# Athena v0.0.4
+# Athena v0.0.5
 
 Athena 是采用 HeroUI 设计语言的原生 OpenWrt LuCI 主题，提供玻璃质感界面、动态状态卡片，以及统一的表格、表单和弹窗。支持浅色、深色和跟随系统模式，适配电脑、平板与手机。
 
@@ -53,7 +53,7 @@ npm run pack
 
 构建会校正安装器、设备检查脚本和更新器的可执行权限；安装器也会设置路由器端更新器权限，兼容网页上传或 ZIP 导出丢失文件模式的情况。
 
-GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.4`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
+GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.5`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
 
 OpenWrt 设备上的接口与更新器隔离检查：
 

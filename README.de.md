@@ -1,6 +1,6 @@
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [العربية](README.ar.md)
 
-# Athena v0.0.4
+# Athena v0.0.5
 
 Athena ist ein natives OpenWrt-LuCI-Theme mit HeroUI als Gestaltungsvorbild. Es verwendet ucode-Vorlagen, rpcd sowie die JavaScript-, Formular- und UCI-Schnittstellen von LuCI. Es enthält weder eine React-Laufzeit noch Argon-Stile. Auf dem Router ist kein Node.js erforderlich.
 

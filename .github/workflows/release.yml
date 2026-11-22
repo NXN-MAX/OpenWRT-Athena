@@ -126,6 +126,7 @@ jobs:
 
           Uninstall: switch to another installed theme first, then use `opkg remove luci-theme-athena` or `apk del luci-theme-athena`.
           NOTES
+          if test -f "doc/releases/$TAG.md"; then cp "doc/releases/$TAG.md" release-notes.md; fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "$TAG has already been published."
           else
