@@ -1,4 +1,4 @@
-# Athena v0.0.3
+# Athena v0.0.4
 
 Athena 是原生 LuCI 主题。服务端模板和素材管理 RPC 均使用 **ucode**；浏览器端使用 LuCI 自带的 JavaScript、`form`、`ui`、`rpc`、`poll` 和 UCI 接口。主题不依赖 Lua 兼容层，也不包含 React、ReactDOM 或 Argon 的 CSS/脚本。默认登录页直接以原生 HTTP 表单提交，不在未认证状态启动 LuCI RPC；带脚本的认证插件保留原生初始化接口。
 
@@ -27,7 +27,7 @@ npm run pack
 
 构建会校正安装器、设备检查脚本和更新器的可执行权限；安装器也会设置路由器端更新器权限，兼容网页上传或 ZIP 导出丢失文件模式的情况。
 
-GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.3`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
+GitHub Actions 在 main 推送和 Pull Request 上执行构建、样式规范检查与回归检查。main 的版本文件变更会自动构建并发布对应版本（当前为 `v0.0.4`），生成标签、安装包和 SHA256，供在线更新使用；也支持推送一致的稳定版标签，或在 Actions → Stable release → Run workflow 手动发布。已发布版本会跳过，后续发布应先增加 package.json 和 Makefile 版本。
 
 OpenWrt 设备上的接口与更新器隔离检查：
 
@@ -64,6 +64,17 @@ ATHENA_SSH=/path/to/device-ssh python3 scripts/test-updater-device.py
 登录页使用本地 SVG 背景，品牌统一放在认证表单上方。分栏版右侧玻璃面板从顶部贯穿到底部，无外部留白或圆角；电脑端另提供居中卡片布局。两种布局仅保留 Athena 品牌、认证表单及必要的错误提示，不显示标语或欢迎说明。输入框、按钮、密码显隐及文字类型复用已有公共组件，登录页只定义布局和背景。自定义图片或视频背景继续生效。手机上两种模式均为全宽单栏、表单向上对齐；浅色与深色随主题外观切换。
 
 图标使用 PNG，16–1024 像素，最大 1 MiB；浏览器图标必须为正方形。背景支持 JPG、PNG、GIF、WebP、MP4、WebM，单个文件最大 20 MiB。上传经 LuCI 原生接口认证，ucode 验证文件类型、尺寸和路径后以 SHA256 文件名存储；设置清单原子写入。SVG/HTML 上传被拒绝。
+
+## OpenWrt 安装包
+
+正式 Release 同时提供官方 SDK 构建的两种安装格式（架构 `all`）：
+
+- OpenWrt 24.10、ucode LuCI、opkg：下载 `.ipk`，执行 `opkg install /tmp/luci-theme-athena_*.ipk`。
+- OpenWrt 25.12、ucode LuCI、apk：下载 `.apk`，执行 `apk add --allow-untrusted /tmp/luci-theme-athena-*.apk`。独立 SDK 构建的包不使用 OpenWrt 官方软件源的签名，因此本地安装需要此参数。
+
+先用 Release 的 `SHA256SUMS` 校验下载文件；依赖由设备自身对应版本的软件源解析。不要混用两个格式。现有配置与上传素材保留。卸载前先切换到其他已安装主题，再执行 `opkg remove luci-theme-athena` 或 `apk del luci-theme-athena`。
+
+发布流程先构建并测试主题，再分别使用 OpenWrt 24.10 和 25.12 SDK 构建，两个包均成功后才创建 Release。以下归档安装方式继续供内置更新器及手动部署使用。
 
 ## 安装
 

@@ -11,7 +11,7 @@ concurrency:
   group: athena-stable-release
   cancel-in-progress: false
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,25 +19,100 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Validate stable release version
+      - name: Validate version
         run: |
           node <<'JS'
           const fs = require('node:fs');
           const { version } = require('./package.json');
-          const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : `v${version}`;
-          if (!/^\d+\.\d+\.\d+$/.test(version) || tag !== `v${version}`) process.exit(1);
-          fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_TAG=${tag}\n`);
+          if (!/^\d+\.\d+\.\d+$/.test(version)) process.exit(1);
+          if (process.env.GITHUB_REF_TYPE === 'tag' && process.env.GITHUB_REF_NAME !== `v${version}`) process.exit(1);
           JS
       - run: npm ci
       - run: npm run build
       - run: npm test
       - run: npm run pack
-      - name: Publish prebuilt native theme
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-source
+          path: dist/*
+          if-no-files-found: error
+  packages:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk: x86_64-24.10.4
+            format: ipk
+          - sdk: x86-64-25.12.6
+            format: apk
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-source
+          path: source
+      - name: Stage SDK feed
+        run: |
+          mkdir -p feed
+          tar -xzf source/luci-theme-athena-*.tar.gz -C feed
+      - name: Build with official OpenWrt SDK
+        uses: openwrt/gh-action-sdk@f5813d30eeef3534b58ac7e79c5d8842b6035434
+        env:
+          ARCH: ${{ matrix.sdk }}
+          FEED_DIR: ${{ github.workspace }}/feed
+          PACKAGES: luci-theme-athena
+          V: s
+      - name: Collect installable package
+        run: |
+          mkdir -p packages
+          find bin/packages -type f -name 'luci-theme-athena*.${{ matrix.format }}' -exec cp {} packages/ \;
+          test "$(find packages -type f | wc -l)" -eq 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.format }}
+          path: packages/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: logs-${{ matrix.format }}
+          path: logs/
+  release:
+    needs: [prepare, packages]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-source
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          path: dist
+          merge-multiple: true
+      - name: Publish installable packages and native update archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "$RELEASE_TAG has already been published."
+          VERSION=$(node -p 'require("./package.json").version')
+          TAG="v$VERSION"
+          (cd dist && sha256sum *.ipk *.apk > SHA256SUMS)
+          cat > release-notes.md <<'NOTES'
+          OpenWrt installable Athena theme packages.
+
+          - `.ipk`: OpenWrt 24.10 with ucode LuCI / opkg; install with `opkg install /tmp/luci-theme-athena_*.ipk`.
+          - `.apk`: OpenWrt 25.12 with ucode LuCI / apk; install with `apk add --allow-untrusted /tmp/luci-theme-athena-*.apk` (independent SDK build, not signed by the official OpenWrt repository).
+          - Architecture `all`: native JavaScript/CSS/ucode, no target-specific executable.
+          - Install dependencies from your firmware's own feeds; existing Athena configuration and uploaded images are preserved.
+          - `.tar.gz` remains available for the built-in theme updater. SHA256 checksums are included.
+
+          Uninstall: switch to another installed theme first, then use `opkg remove luci-theme-athena` or `apk del luci-theme-athena`.
+          NOTES
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG has already been published."
           else
-            gh release create "$RELEASE_TAG" dist/* --target "$GITHUB_SHA" --title "Athena $RELEASE_TAG" --generate-notes
+            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Athena $TAG" --notes-file release-notes.md
           fi
